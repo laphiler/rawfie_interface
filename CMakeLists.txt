@@ -44,6 +44,7 @@ include_directories(
 #add_executable(rcomponent_node src/rcomponent.cpp)
 
 add_executable(RwfInterface src/rdkafka_producer.cpp)
+add_executable(RwfConsumerInterface src/rdkafka_consumer.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -56,6 +57,12 @@ add_executable(RwfInterface src/rdkafka_producer.cpp)
 #)
 
 target_link_libraries(RwfInterface
+  rdkafka++
+  rdkafka
+  avrocpp
+  ${catkin_LIBRARIES} 
+)
+target_link_libraries(RwfConsumerInterface
   rdkafka++
   rdkafka
   avrocpp

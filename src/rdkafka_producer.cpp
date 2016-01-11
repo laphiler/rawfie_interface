@@ -67,7 +67,6 @@ RdKafkaProducer::RdKafkaProducer(int partition, std::string topic){
 	* Set configuration properties
 	*/
 	conf->set("metadata.broker.list", brokers, errstr);
-	//conf->set("event_cb", &RdKafkaProducer::ex_event_cb, errstr, this);
 	conf->set("event_cb", &ex_event_cb, errstr);
 	 /* Set delivery report callback */
     conf->set("dr_cb", &ex_dr_cb, errstr);
@@ -114,9 +113,7 @@ RdKafkaProducer::~RdKafkaProducer(){
 
 template <class T>
 int RdKafkaProducer::sendMsg(T msg){
-
-	//RdKafka::ErrorCode resp = kafka_producer->produce(kafka_topic, partition,
-	//	  RdKafka::Producer::RK_MSG_COPY, const_cast<Location *>(&c1), sizeof(c1), NULL, NULL);
+	
 	RdKafka::ErrorCode resp = kafka_producer->produce(kafka_topic, partition,
 		  RdKafka::Producer::RK_MSG_COPY, const_cast<T *>(&msg), sizeof(msg), NULL, NULL);
 
