@@ -169,7 +169,7 @@ class RwfInterface{
             posX = 0.0;
             posY = 0.0;
 
-            np.param<std::string>("Odom_topic", odom_topic, "/summit_xl/odom");
+            np.param<std::string>("Odom_topic", odom_topic, "summit_xl/odom");
 
             pubTwist = n.advertise<geometry_msgs::Twist>(twist_topic, 1);
 
@@ -177,9 +177,9 @@ class RwfInterface{
             sub_emergency_stop = n.subscribe("/summit_xl_controller/emergency_stop", 1,&RwfInterface::ESCallback,this);
             summit_odom_sub = n.subscribe<nav_msgs::Odometry>(odom_topic, 1,&RwfInterface::SummitOdomCallback,this);
 
-			location_producer = new RdKafkaProducer(0, "test");
-			attitude_producer = new RdKafkaProducer(1, "test");
-			header_producer = new RdKafkaProducer(2, "test");
+			location_producer = new RdKafkaProducer(0, "location");
+			attitude_producer = new RdKafkaProducer(0, "attitude");
+			header_producer = new RdKafkaProducer(0, "header");
 
             ROS_INFO("Setup finished");
         };
@@ -193,7 +193,9 @@ class RwfInterface{
             
             ros::Rate r(desired_freq_);
             while(ros::ok())
-            {								
+            {					
+				ros::spinOnce( );
+				                							
 				Loc.n = odom_pose.position.x;
 				Loc.e = odom_pose.position.y;				
 				location_producer->sendMsg(Loc);
@@ -242,6 +244,9 @@ class RwfInterface{
 
 				odom_pose= odom_msg->pose.pose;
 				odom_q = odom_pose.orientation;
+				
+				ROS_INFO("x: %f", odom_pose.position.x );
+
 
 				tf::quaternionMsgToTF(odom_q,odom_q_tf);
 				tf::Matrix3x3(odom_q_tf).getRPY(odom_roll, odom_pitch, odom_yaw);

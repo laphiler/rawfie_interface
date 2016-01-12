@@ -101,11 +101,8 @@ class RdKafkaConsumer{
 	
 	RdKafkaConsumer(int partition, std::string topic);
 	~RdKafkaConsumer();
-	template <class T>
-	int consumeMsg(T *read_msg);
-	template <class T> 
-	void msg_consume(RdKafka::Message* message, T* read_msg);
-		
+	RdKafka::Message *consumeMsg();
+
 };
 
 #endif

@@ -101,7 +101,7 @@ RdKafkaConsumer::~RdKafkaConsumer(){
 	
     delete kafka_topic;
     delete kafka_consumer;
-    
+        
 	/*
    * Wait for RdKafka to decommission.
    * This is not strictly needed (when check outq_len() above), but
@@ -112,44 +112,30 @@ RdKafkaConsumer::~RdKafkaConsumer(){
 	RdKafka::wait_destroyed(5000);
 }
 
-template <class T>
-void RdKafkaConsumer::msg_consume(RdKafka::Message* message, T* read_msg) {
-	//Location *payload;
-	
-    int err_code = message->err();
+
+
+RdKafka::Message *RdKafkaConsumer::consumeMsg(){
+    // Consume messages
+	RdKafka::Message *kafka_msg = kafka_consumer->consume(kafka_topic, partition, 1000);
+
+    int err_code = kafka_msg->err();
     if(err_code ==  RdKafka::ERR_NO_ERROR){
       /* Real message */
-      std::cout << "Read msg at offset " << message->offset() << std::endl;
-      if (message->key()) {
-        std::cout << "Key: " << *message->key() << std::endl;
+      std::cout << "Read msg at offset " << kafka_msg->offset() << std::endl;
+      if (kafka_msg->key()) {
+        std::cout << "Key: " << *kafka_msg->key() << std::endl;
       }
-      //payload = static_cast<Location *>(message->payload());
-      read_msg = static_cast<T *>(message->payload());
-      //std::cout << '(' << payload->latitude << ')' << std::endl;  
-        
     }else if(err_code == RdKafka::ERR__UNKNOWN_TOPIC or err_code == RdKafka::ERR__UNKNOWN_PARTITION){
-      std::cerr << "Consume failed: " << message->errstr() << std::endl;
+      std::cerr << "Consume failed: " << kafka_msg->errstr() << std::endl;
     }else{
       /* Errors */
-      std::cerr << "Consume failed: " << message->errstr() << std::endl;
-   }
-}
-
-template <class T>
-int RdKafkaConsumer::consumeMsg(T *read_msg){
-    //Start consumer for topic+partition at start offset
-     
-   /* RdKafka::ErrorCode resp = kafka_consumer->start(kafka_topic, partition, start_offset);    
-    if (resp != RdKafka::ERR_NO_ERROR) {
-      std::cerr << "Failed to start consumer: " << RdKafka::err2str(resp) << std::endl;
-      exit(1);
-    }*/
-    // Consume messages
-    
-	RdKafka::Message *kafka_msg = kafka_consumer->consume(kafka_topic, partition, 1000);
-	msg_consume(kafka_msg, read_msg);
-	delete kafka_msg;     
-	kafka_consumer->poll(0);
+      std::cerr << "Consume failed: " << kafka_msg->errstr() << std::endl;
+	}
+	//return kafka_consumer->consume(kafka_topic, partition, 1000);
+	return kafka_msg;
+	
+	//delete kafka_msg;     
+	//kafka_consumer->poll(0);
 }
 
 
@@ -176,7 +162,7 @@ class RwfConsumerInterface{
             pos_y = 0.0;
             //pubTwist = n.advertise<geometry_msgs::Twist>(twist_topic, 1);
 
-			rd_kafka_consumer = new RdKafkaConsumer(0,"test");
+			rd_kafka_consumer = new RdKafkaConsumer(0,"location");
             ROS_INFO("Setup finished");
         };
 
@@ -187,12 +173,16 @@ class RwfConsumerInterface{
             
             ros::Rate r(desired_freq_);
             while(ros::ok())
-            {								
-				rd_kafka_consumer->consumeMsg(&Loc);
-				pos_x = Loc.n;
-				pos_y = Loc.e;
-				ROS_INFO("Location: x:%f  y:%f", pos_x, pos_y);
-		
+            {	
+				ros::spinOnce();
+				
+				RdKafka::Message *kafka_msg;
+				Location *loki;
+				
+				kafka_msg = rd_kafka_consumer->consumeMsg();
+				loki = static_cast<Location *>(kafka_msg->payload());
+				ROS_INFO("Location: x:%f  y:%f", loki->n, loki->e);
+				
                 r.sleep();
             }
             ros::shutdown();
@@ -203,7 +193,7 @@ class RwfConsumerInterface{
 
 int main(int argc, char** argv){
 
-	ros::init(argc, argv, "RwfInterface");
+	ros::init(argc, argv, "RwfConsumerInterface");
 	ros::Time::init();
 
 	RwfConsumerInterface RwfConsumerInterface_= RwfConsumerInterface();
