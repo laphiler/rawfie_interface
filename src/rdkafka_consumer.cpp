@@ -32,6 +32,7 @@
  * (https://github.com/edenhill/librdkafka)
  */
 #include <rdkafka_consumer.h>
+#include <typeinfo>
 
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
@@ -49,6 +50,9 @@
 
 #include <iostream>
 #include <sys/time.h>
+
+#include <move_base_msgs/MoveBaseAction.h>
+#include <actionlib/client/simple_action_client.h>
 
 
 
@@ -121,17 +125,19 @@ RdKafka::Message *RdKafkaConsumer::consumeMsg(){
     int err_code = kafka_msg->err();
     if(err_code ==  RdKafka::ERR_NO_ERROR){
       /* Real message */
-      std::cout << "Read msg at offset " << kafka_msg->offset() << std::endl;
+      std::cout << "Read msg at offset " << kafka_msg->offset() << ", len = " << kafka_msg->len() << std::endl;
       if (kafka_msg->key()) {
         std::cout << "Key: " << *kafka_msg->key() << std::endl;
       }
     }else if(err_code == RdKafka::ERR__UNKNOWN_TOPIC or err_code == RdKafka::ERR__UNKNOWN_PARTITION){
       std::cerr << "Consume failed: " << kafka_msg->errstr() << std::endl;
+      return NULL;
     }else{
       /* Errors */
       std::cerr << "Consume failed: " << kafka_msg->errstr() << std::endl;
+      return NULL;
 	}
-	//return kafka_consumer->consume(kafka_topic, partition, 1000);
+	
 	return kafka_msg;
 	
 	//delete kafka_msg;     
@@ -142,27 +148,39 @@ RdKafka::Message *RdKafkaConsumer::consumeMsg(){
 class RwfConsumerInterface{
     public:
 
+		typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
+
         // Variables
         ros::NodeHandle n;
         ros::Publisher  pubTwist;
 		
-		Location Loc;
-		RdKafkaConsumer *rd_kafka_consumer;
+		RdKafkaConsumer *kafka_loc_consumer;
+		RdKafkaConsumer *kafka_goto_consumer;
+		RdKafkaConsumer *kafka_att_consumer;
+		RdKafkaConsumer *kafka_head_consumer;
 		float pos_x, pos_y, desired_freq_;
-
+		bool active_goal;
+        move_base_msgs::MoveBaseGoal goal;
+		MoveBaseClient *ac;
 		
         // Methods
         RwfConsumerInterface()
         {
             ROS_INFO("Setup");
             ros::NodeHandle np("~");
-            desired_freq_ = 5.0;
+            desired_freq_ = 10.0;
 			
             pos_x = 0.0;
             pos_y = 0.0;
+            active_goal=false;
             //pubTwist = n.advertise<geometry_msgs::Twist>(twist_topic, 1);
 
-			rd_kafka_consumer = new RdKafkaConsumer(0,"location");
+			kafka_loc_consumer = new RdKafkaConsumer(0,"location");
+			kafka_goto_consumer = new RdKafkaConsumer(0,"goto");
+			kafka_att_consumer = new RdKafkaConsumer(0,"attitude");
+			kafka_head_consumer = new RdKafkaConsumer(0,"header");
+			
+			ac = new MoveBaseClient("move_base", true);
             ROS_INFO("Setup finished");
         };
 
@@ -176,18 +194,88 @@ class RwfConsumerInterface{
             {	
 				ros::spinOnce();
 				
-				RdKafka::Message *kafka_msg;
-				Location *loki;
+				/*Location
+				RdKafka::Message *kafka_loc_msg;
+				Location *Loc;
 				
-				kafka_msg = rd_kafka_consumer->consumeMsg();
-				loki = static_cast<Location *>(kafka_msg->payload());
-				ROS_INFO("Location: x:%f  y:%f", loki->n, loki->e);
+				ROS_INFO("Location Consumer");
+				kafka_loc_msg = kafka_loc_consumer->consumeMsg();
+				if(kafka_loc_msg!=NULL){
+					Loc = static_cast<Location *>(kafka_loc_msg->payload());
+					ROS_INFO("Location: x:%f  y:%f", Loc->n, Loc->e);
+				}
+				/*Attitude
+				RdKafka::Message *kafka_att_msg;
+				Attitude *Att;
+								
+				ROS_INFO("Attitude Consumer");
+				kafka_att_msg = kafka_loc_consumer->consumeMsg();
+				if(kafka_att_msg!=NULL){
+					Att = static_cast<Attitude *>(kafka_att_msg->payload());
+					ROS_INFO("Attitude: phi:%f  theta:%f psi:%f", Att->phi, Att->theta, Att->psi);
+				}
+				/*Head
+				RdKafka::Message *kafka_head_msg;
+				Header *Head;				
+				
+				ROS_INFO("Header Consumer");
+				kafka_head_msg = kafka_head_consumer->consumeMsg();
+				if(kafka_head_msg!=NULL){
+					Head = static_cast<Header *>(kafka_head_msg->payload());
+					//if(typeid(Head->sourceSystem) == typeid(std::string))
+					//std::cout << "Hola" <<  Head->sourceSystem.empty() << std::endl;
+					//ROS_INFO("Header: sourceSystem:%s  sourceModule:%s  time:%ld", Head->sourceSystem.c_str(), Head->sourceModule.c_str(), Head->time);
+					ROS_INFO("time:%ld",  Head->time);
+				}*/
+				/* Goto */
+				RdKafka::Message *kafka_goto_msg;
+				Goto *Got;
+				
+				kafka_goto_msg = kafka_goto_consumer->consumeMsg();
+				if(kafka_goto_msg!=NULL){
+					Got = static_cast<Goto *>(kafka_goto_msg->payload());
+					pos_x = Got->location.n;
+					pos_y = Got->location.e;
+					ROS_INFO("Goto: x:%f  y:%f", pos_x, pos_y);
+
+					while(!ac->waitForServer(ros::Duration(5.0)))
+					{
+					  ROS_INFO("Waiting for the move_base action server to come up");
+					}
+
+					if(!active_goal)
+					{
+					   //we'll send a goal to the robot
+					   goal.target_pose.header.frame_id = "base_link";
+					   goal.target_pose.header.stamp = ros::Time::now();
+					   goal.target_pose.pose.position.x = pos_x;
+					   goal.target_pose.pose.position.y = pos_y;
+					   goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(0);
+
+					   ROS_INFO("Sending goal");
+					   ac->sendGoal(goal);
+					   active_goal = true;
+					}
+
+				   ac->waitForResult(ros::Duration(1.0));
+
+				   if(ac->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+				   {
+					 ROS_INFO("the base reached the goal");
+					 active_goal=false;
+				   }
+				   else if(ac->getState() != actionlib::SimpleClientGoalState::ACTIVE)
+				   {
+					 ROS_INFO("Navigation Failed");
+				   }
+				}
 				
                 r.sleep();
             }
             ros::shutdown();
 
         };
+        
 
 }; //end of class
 

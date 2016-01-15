@@ -4,6 +4,11 @@ project(rawfie_interface)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  actionlib
+  move_base_msgs
+  tf
+  nav_msgs
+  message_generation
   std_msgs
   std_srvs
   diagnostic_msgs
@@ -12,6 +17,18 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+
+## Generate services in the 'srv' folder
+add_service_files(DIRECTORY srv
+   FILES
+    enable_docking.srv
+)
+
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+   DEPENDENCIES
+   nav_msgs robotnik_msgs sensor_msgs rawfie_interface std_msgs
+ )
 
 
 ###################################
@@ -44,7 +61,7 @@ include_directories(
 #add_executable(rcomponent_node src/rcomponent.cpp)
 
 add_executable(RwfInterface src/rdkafka_producer.cpp)
-#add_executable(RwfConsumerInterface src/rdkafka_consumer.cpp)
+add_executable(RwfConsumerInterface src/rdkafka_consumer.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes

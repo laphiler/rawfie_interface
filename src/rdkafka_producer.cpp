@@ -48,6 +48,8 @@
 #include <math.h>
 #include <string>
 #include <nav_msgs/Odometry.h>
+#include <rawfie_interface/goto_test.h>
+
 
 #include <iostream>
 #include <sys/time.h>
@@ -151,13 +153,17 @@ class RwfInterface{
         float posX;
         float posY;
         float yaw_y_rad;
+        bool send_goto;
         double roll, pitch, yaw, odom_roll, odom_pitch, odom_yaw;
         unsigned long int sec;
 		
 		Location Loc;
 		Attitude Att;
 		Header Head;
-		RdKafkaProducer *location_producer, *attitude_producer, *header_producer;
+		Goto Got;
+		RdKafkaProducer *location_producer, *attitude_producer, *header_producer, *goto_producer;
+		
+		ros::ServiceServer goto_srv_;
 		
         // Methods
         RwfInterface()
@@ -165,7 +171,8 @@ class RwfInterface{
             ROS_INFO("Setup");
             ros::NodeHandle np("~");
             desired_freq_ = 5.0;
-			
+			sec = 0;
+			send_goto = false;
             posX = 0.0;
             posY = 0.0;
 
@@ -180,6 +187,9 @@ class RwfInterface{
 			location_producer = new RdKafkaProducer(0, "location");
 			attitude_producer = new RdKafkaProducer(0, "attitude");
 			header_producer = new RdKafkaProducer(0, "header");
+			goto_producer = new RdKafkaProducer(0, "goto");
+			
+			goto_srv_ = n.advertiseService("/goto_srv",  &RwfInterface::GOTO_TEST, this);			
 
             ROS_INFO("Setup finished");
         };
@@ -208,11 +218,20 @@ class RwfInterface{
 				ROS_INFO("Attitude Produced");
 				
 				sec= time(NULL);
-				Head.sourceSystem = "TestSystem";
-				Head.sourceModule = "SummitTest";
+				Head.sourceSystem.assign("");// = std::string("");
+				Head.sourceModule.assign("");// = std::string("");				
 				Head.time = sec;
+				//ROS_INFO("size 1 = %d",(int)sizeof(Head));
 				header_producer->sendMsg(Head);
-				ROS_INFO("Header Produced");				
+				ROS_INFO("Header Produced");
+				
+				if(send_goto){
+					Got.location.n = 1.0;
+					Got.location.e = 2.0;
+					goto_producer->sendMsg(Att);
+					ROS_INFO("Goto Produced");	
+					send_goto =false;			
+				}
 				
                 r.sleep();
             }
@@ -245,13 +264,23 @@ class RwfInterface{
 				odom_pose= odom_msg->pose.pose;
 				odom_q = odom_pose.orientation;
 				
-				ROS_INFO("x: %f", odom_pose.position.x );
+				//ROS_INFO("x: %f", odom_pose.position.x );
 
 
 				tf::quaternionMsgToTF(odom_q,odom_q_tf);
 				tf::Matrix3x3(odom_q_tf).getRPY(odom_roll, odom_pitch, odom_yaw);
 
 		};
+		
+		bool GOTO_TEST(rawfie_interface::goto_test::Request &req, rawfie_interface::goto_test::Response &res)
+        {
+            send_goto = req.value;
+
+            //ROS_INFO("Docking Enable/Disable Service Setting to %d", req.value);
+            res.ret = true;
+            return true;
+        };
+
 
 
 }; //end of class

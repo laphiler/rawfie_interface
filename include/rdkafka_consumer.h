@@ -9,6 +9,8 @@
 #include "location.hh"
 #include "attitude.hh"
 #include "header.hh"
+#include "header.hh"
+#include "goto.hh"
 #include <iostream>
 #include <string>
 #include <cstdlib>

@@ -1,0 +1,31 @@
+{
+  "namespace": "eu.rawfie.uxv",
+  "name": "LinearAcceleration",
+  "type": "record",
+  "doc": "Angles describing the attitude of a rigid body (Euler angles)",
+  "fields": [
+    {
+      "name": "header",
+      "type": "Header",
+      "doc": "Message header"
+    },
+    {
+      "name": "x",
+      "type": "float",
+      "doc": "Rotation around the body's longitudinal axis",
+      "unit": "m/s/s"
+    },
+    {
+      "name": "y",
+      "type": "float",
+      "doc": "Rotation around the body's lateral or transverse axis",
+      "unit": "m/s/s"
+    },
+    {
+      "name": "z",
+      "type": "float",
+      "doc": "Rotation around the body's vertical axis. A value of 0 means the body is oriented towards true north",
+      "unit": "m/s/s"
+    }
+  ]
+}

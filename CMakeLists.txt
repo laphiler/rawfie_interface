@@ -4,6 +4,11 @@ project(rawfie_interface)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  actionlib
+  move_base_msgs
+  tf
+  nav_msgs
+  message_generation
   std_msgs
   std_srvs
   diagnostic_msgs
@@ -12,6 +17,18 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+
+## Generate services in the 'srv' folder
+add_service_files(DIRECTORY srv
+   FILES
+    goto_test.srv
+)
+
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+   DEPENDENCIES
+   nav_msgs robotnik_msgs sensor_msgs rawfie_interface std_msgs
+ )
 
 
 ###################################
