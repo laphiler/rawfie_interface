@@ -218,8 +218,8 @@ class RwfInterface{
 				ROS_INFO("Attitude Produced");
 				
 				sec= time(NULL);
-				Head.sourceSystem.assign("");// = std::string("");
-				Head.sourceModule.assign("");// = std::string("");				
+				Head.sourceSystem.assign("Test");// = std::string("");
+				Head.sourceModule.assign("Summit_XL");// = std::string("");				
 				Head.time = sec;
 				//ROS_INFO("size 1 = %d",(int)sizeof(Head));
 				header_producer->sendMsg(Head);
@@ -228,7 +228,7 @@ class RwfInterface{
 				if(send_goto){
 					Got.location.n = 1.0;
 					Got.location.e = 2.0;
-					goto_producer->sendMsg(Att);
+					goto_producer->sendMsg(Got);
 					ROS_INFO("Goto Produced");	
 					send_goto =false;			
 				}
