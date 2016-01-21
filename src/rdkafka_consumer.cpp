@@ -201,15 +201,16 @@ class RwfConsumerInterface{
 				ROS_INFO("Location Consumer");
 				kafka_loc_msg = kafka_loc_consumer->consumeMsg();
 				if(kafka_loc_msg!=NULL){
+					/*
 					std::auto_ptr<avro::OutputStream> out;
 					
 					out = static_cast<Location *>(kafka_loc_msg->payload());
 					std::auto_ptr<avro::InputStream> in = avro::memoryInputStream(*out);
 					avro::DecoderPtr d = avro::binaryDecoder();
 					d->init(*in);
-					avro::decode(*d, Loc);
-					//Loc = static_cast<Location *>(kafka_loc_msg->payload());
-					//ROS_INFO("Location: x:%f  y:%f", Loc->n, Loc->e);
+					avro::decode(*d, Loc);*/
+					Loc = static_cast<Location *>(kafka_loc_msg->payload());
+					ROS_INFO("Location: x:%f  y:%f", Loc->n, Loc->e);
 				}
 				/*Attitude
 				RdKafka::Message *kafka_att_msg;
