@@ -194,15 +194,22 @@ class RwfConsumerInterface{
             {	
 				ros::spinOnce();
 				
-				/*Location
+				/*Location*/
 				RdKafka::Message *kafka_loc_msg;
 				Location *Loc;
 				
 				ROS_INFO("Location Consumer");
 				kafka_loc_msg = kafka_loc_consumer->consumeMsg();
 				if(kafka_loc_msg!=NULL){
-					Loc = static_cast<Location *>(kafka_loc_msg->payload());
-					ROS_INFO("Location: x:%f  y:%f", Loc->n, Loc->e);
+					std::auto_ptr<avro::OutputStream> out;
+					
+					out = static_cast<Location *>(kafka_loc_msg->payload());
+					std::auto_ptr<avro::InputStream> in = avro::memoryInputStream(*out);
+					avro::DecoderPtr d = avro::binaryDecoder();
+					d->init(*in);
+					avro::decode(*d, Loc);
+					//Loc = static_cast<Location *>(kafka_loc_msg->payload());
+					//ROS_INFO("Location: x:%f  y:%f", Loc->n, Loc->e);
 				}
 				/*Attitude
 				RdKafka::Message *kafka_att_msg;
@@ -214,7 +221,7 @@ class RwfConsumerInterface{
 					Att = static_cast<Attitude *>(kafka_att_msg->payload());
 					ROS_INFO("Attitude: phi:%f  theta:%f psi:%f", Att->phi, Att->theta, Att->psi);
 				}
-				/*Head*/
+				/*Head
 				RdKafka::Message *kafka_head_msg;
 				Header *Head;				
 				
@@ -227,7 +234,7 @@ class RwfConsumerInterface{
 					//ROS_INFO("Header: sourceSystem:%s  sourceModule:%s  time:%ld", Head->sourceSystem.c_str(), Head->sourceModule.c_str(), Head->time);
 					ROS_INFO("time:%ld",  Head->time);
 				}
-				/* Goto */
+				/* Goto 
 				RdKafka::Message *kafka_goto_msg;
 				Goto *Got;
 				
@@ -268,7 +275,7 @@ class RwfConsumerInterface{
 				   {
 					 ROS_INFO("Navigation Failed");
 				   }
-				}
+				}*/
 				
                 r.sleep();
             }

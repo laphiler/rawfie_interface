@@ -161,8 +161,7 @@ class RwfInterface{
 		Attitude Att;
 		Header Head;
 		Goto Got;
-		RdKafkaProducer *location_producer, *attitude_producer, *header_producer, *goto_producer;
-		
+		RdKafkaProducer *location_producer, *attitude_producer, *header_producer, *goto_producer;	
 		ros::ServiceServer goto_srv_;
 		
         // Methods
@@ -189,7 +188,7 @@ class RwfInterface{
 			header_producer = new RdKafkaProducer(0, "header");
 			goto_producer = new RdKafkaProducer(0, "goto");
 			
-			goto_srv_ = n.advertiseService("/goto_srv",  &RwfInterface::GOTO_TEST, this);			
+			goto_srv_ = n.advertiseService("/goto_srv",  &RwfInterface::GOTO_TEST, this);	
 
             ROS_INFO("Setup finished");
         };
@@ -203,14 +202,19 @@ class RwfInterface{
             
             ros::Rate r(desired_freq_);
             while(ros::ok())
-            {					
-				ros::spinOnce( );
-				                							
+            {	
+				ros::spinOnce( );					
+						
+				std::auto_ptr<avro::OutputStream> out = avro::memoryOutputStream();
+				avro::EncoderPtr e = avro::binaryEncoder();				
+				e->init(*out);		
+						                							
 				Loc.n = odom_pose.position.x;
-				Loc.e = odom_pose.position.y;				
-				location_producer->sendMsg(Loc);
+				Loc.e = odom_pose.position.y;	
+				avro::encode(*e, Loc);			
+				location_producer->sendMsg(out);
 				ROS_INFO("Location Produced");
-
+				/*
 				Att.phi = odom_roll;
 				Att.theta = odom_pitch;
 				Att.psi = odom_yaw;
@@ -232,7 +236,7 @@ class RwfInterface{
 					ROS_INFO("Goto Produced");	
 					send_goto =false;			
 				}
-				
+				*/
                 r.sleep();
             }
             ros::shutdown();
