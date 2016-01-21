@@ -214,7 +214,7 @@ class RwfConsumerInterface{
 					Att = static_cast<Attitude *>(kafka_att_msg->payload());
 					ROS_INFO("Attitude: phi:%f  theta:%f psi:%f", Att->phi, Att->theta, Att->psi);
 				}
-				/*Head
+				/*Head*/
 				RdKafka::Message *kafka_head_msg;
 				Header *Head;				
 				
@@ -226,7 +226,7 @@ class RwfConsumerInterface{
 					//std::cout << "Hola" <<  Head->sourceSystem.empty() << std::endl;
 					//ROS_INFO("Header: sourceSystem:%s  sourceModule:%s  time:%ld", Head->sourceSystem.c_str(), Head->sourceModule.c_str(), Head->time);
 					ROS_INFO("time:%ld",  Head->time);
-				}*/
+				}
 				/* Goto */
 				RdKafka::Message *kafka_goto_msg;
 				Goto *Got;
