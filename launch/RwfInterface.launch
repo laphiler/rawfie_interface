@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-<node name="RwfInterface" pkg="rawfie_interface" type="RwfInterface" output="screen">
+<node name="RwfInterface" pkg="rawfie_interface" type="ros_kafka_producer.py" output="screen">
 </node>
 </launch>
  
