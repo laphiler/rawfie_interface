@@ -36,8 +36,10 @@ import rospy
 
 import time, threading
 
-from robotnik_msgs.msg import State
+import os
+import rospkg
 
+from robotnik_msgs.msg import State
 from confluent.schemaregistry.client import CachedSchemaRegistryClient
 from confluent.schemaregistry.serializers import MessageSerializer, Util
 from kafka import SimpleProducer, KafkaClient
@@ -61,7 +63,7 @@ class RComponent:
 			rospy.loginfo('%s::init: Desired freq (%f) is not possible. Setting desired_freq to %f'%(self.node_name,self.desired_freq, DEFAULT_FREQ))
 			self.desired_freq = DEFAULT_FREQ
 	
-	
+		
 		self.real_freq = 0.0
 		
 		# Saves the state of the component
@@ -83,7 +85,9 @@ class RComponent:
 		
 		
 		self.t_publish_state = threading.Timer(self.publish_state_timer, self.publishROSstate)
-		
+		self.rp = rospkg.RosPack()
+		self.path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas', 'header.avsc')
+		print self.path_file
 			
 	def setup(self):
 		'''
@@ -93,11 +97,15 @@ class RComponent:
 		'''
 		Some helper methods in util to get a schema
 		'''
+		
 		#avro_schema = Util.parse_schema_from_file(r'/Kafka_python/tests2/python-confluent-schemaregistry/Avro_Schemas/header.avsc')
-		self.avro_schema = Util.parse_schema_from_string(open(r'./Avro_Schemas/header.avsc').read())
+		#self.avro_schema = Util.parse_schema_from_string(open(r'/home/glamdring/catkin_ws/src/rawfie_interface/Avro_Schemas/header.avsc').read())
+		self.avro_schema = Util.parse_schema_from_string(open(self.path_file).read())
+
 		'''
 		Initialize the client
 		'''
+		
 		self.client = CachedSchemaRegistryClient(url='http://localhost:8081')
 		'''
 			# Schema operations
@@ -105,10 +113,12 @@ class RComponent:
 		'''
 		Register a schema for a subject
 		'''
+		
 		self.schema_id = self.client.register('my_subject', self.avro_schema)
 		'''
 		Get the version of a schema
 		'''
+		
 		self.schema_version = self.client.get_version('my_subject', self.avro_schema)
 		'''
 			# Compatibility tests
@@ -117,11 +127,13 @@ class RComponent:
 		'''
 		One of NONE, FULL, FORWARD, BACKWARD
 		'''
+		
 		self.new_level = self.client.update_compatibility('NONE','my_subject')
 		self.current_level = self.client.get_compatibility('my_subject')
 		'''
 		Create Serializer
 		'''
+		
 		self.serializer = MessageSerializer(self.client)
 		
 		self.initialized = True
