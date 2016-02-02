@@ -90,10 +90,13 @@ class RComponent:
 		
 		self.t_publish_state = threading.Timer(self.publish_state_timer, self.publishROSstate)
 		
+		self.location_x = 0.0
+		self.location_y = 0.0
+		
 		self.rp = rospkg.RosPack()
 		self.Header_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'header.avsc')
 		self.Attitude_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'attitude.avsc')
-		print self.Header_path_file
+		self.Location_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'location.avsc')
 			
 	def setup(self):
 		'''
@@ -108,6 +111,7 @@ class RComponent:
 		#self.avro_schema = Util.parse_schema_from_string(open(r'/home/glamdring/catkin_ws/src/rawfie_interface/Avro_Schemas/header.avsc').read())
 		self.Header_avro_schema = Util.parse_schema_from_string(open(self.Header_path_file).read())
 		self.Attitude_avro_schema = Util.parse_schema_from_string(open(self.Attitude_path_file).read())
+		self.Location_avro_schema = Util.parse_schema_from_string(open(self.Location_path_file).read())
 
 		'''
 		Initialize the client
@@ -123,12 +127,14 @@ class RComponent:
 		
 		self.Header_schema_id = self.client.register('UGV_Header', self.Header_avro_schema)
 		self.Attitude_schema_id = self.client.register('UGV_Attitude', self.Attitude_avro_schema)
+		self.Location_schema_id = self.client.register('UGV_Location', self.Location_avro_schema)
 		'''
 		Get the version of a schema
 		'''
 		
 		self.Header_schema_version = self.client.get_version('UGV_Header', self.Header_avro_schema)
 		self.Attitude_schema_version = self.client.get_version('UGV_Attitude', self.Attitude_avro_schema)
+		self.Location_schema_version = self.client.get_version('UGV_Location', self.Location_avro_schema)
 		'''
 			# Compatibility tests
 		'''
@@ -332,12 +338,14 @@ class RComponent:
 		
 		Header_record = {"sourceSystem": "Testbed1", "sourceModule": "UGV Summit_XL_1", "time": now.secs}
 		Attitude_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "phi": 1.854, "theta": 3.041, "psi": 2.031}
+		Location_record = {"latitude": 0, "longitude": 0, "height": 0, "n": self.location_x, "e": self.location_y, "d": 0, "depth": 0, "altitude": 0}
 
 		'''
 			use the schema id directly
 		'''
 		encoded_Header = self.serializer.encode_record_with_schema_id(self.Header_schema_id, Header_record)
 		encoded_Attitude = self.serializer.encode_record_with_schema_id(self.Attitude_schema_id, Attitude_record)
+		encoded_Location = self.serializer.encode_record_with_schema_id(self.Location_schema_id, Location_record)
 		'''
 		use an existing schema and topic
 		this will register the schema to the right subject based
@@ -357,6 +365,7 @@ class RComponent:
 		kafka = KafkaClient('localhost:9092')
 		Header_producer = SimpleProducer(kafka)
 		Attitude_producer = SimpleProducer(kafka)
+		Location_producer = SimpleProducer(kafka)
 		'''
 		Kafka topic
 		'''
@@ -364,6 +373,8 @@ class RComponent:
 		Header_producer.send_messages(Header_topic, encoded_Header)
 		Attitude_topic = "Attitude"
 		Attitude_producer.send_messages(Attitude_topic, encoded_Attitude)
+		Location_topic = "Location"
+		Location_producer.send_messages(Location_topic, encoded_Location)
 		
 		return
 		
@@ -467,13 +478,13 @@ class RComponent:
 		odom_pose = msg.pose.pose;
 		odom_q = odom_pose.orientation;
 		# use the angles with orientation_euler.x, orientation_euler.y, orientation_euler.z
-		orientation_euler = tf.transformations.euler_from_quaternion( odom_q )
+		self.orientation_euler = tf.transformations.euler_from_quaternion( odom_q )
+		self.location_x = odom_pose.position.x
+		self.location_y = odom_pose.position.y
 		
 		# DEMO
 		rospy.loginfo('Odom received:: x:%f',odom_pose.position.x)
-		rospy.loginfo('Odom callback')
 				
-
 	"""
 	def serviceCb(self, req):
 		'''
