@@ -39,6 +39,11 @@ import time, threading
 import os
 import rospkg
 
+# Messages
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Point, Quaternion
+import tf
+
 from robotnik_msgs.msg import State
 from confluent.schemaregistry.client import CachedSchemaRegistryClient
 from confluent.schemaregistry.serializers import MessageSerializer, Util
@@ -83,11 +88,12 @@ class RComponent:
 		# Timer to publish state
 		self.publish_state_timer = 1
 		
-		
 		self.t_publish_state = threading.Timer(self.publish_state_timer, self.publishROSstate)
+		
 		self.rp = rospkg.RosPack()
-		self.path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas', 'header.avsc')
-		print self.path_file
+		self.Header_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'header.avsc')
+		self.Attitude_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'attitude.avsc')
+		print self.Header_path_file
 			
 	def setup(self):
 		'''
@@ -100,7 +106,8 @@ class RComponent:
 		
 		#avro_schema = Util.parse_schema_from_file(r'/Kafka_python/tests2/python-confluent-schemaregistry/Avro_Schemas/header.avsc')
 		#self.avro_schema = Util.parse_schema_from_string(open(r'/home/glamdring/catkin_ws/src/rawfie_interface/Avro_Schemas/header.avsc').read())
-		self.avro_schema = Util.parse_schema_from_string(open(self.path_file).read())
+		self.Header_avro_schema = Util.parse_schema_from_string(open(self.Header_path_file).read())
+		self.Attitude_avro_schema = Util.parse_schema_from_string(open(self.Attitude_path_file).read())
 
 		'''
 		Initialize the client
@@ -114,12 +121,14 @@ class RComponent:
 		Register a schema for a subject
 		'''
 		
-		self.schema_id = self.client.register('my_subject', self.avro_schema)
+		self.Header_schema_id = self.client.register('UGV_Header', self.Header_avro_schema)
+		self.Attitude_schema_id = self.client.register('UGV_Attitude', self.Attitude_avro_schema)
 		'''
 		Get the version of a schema
 		'''
 		
-		self.schema_version = self.client.get_version('my_subject', self.avro_schema)
+		self.Header_schema_version = self.client.get_version('UGV_Header', self.Header_avro_schema)
+		self.Attitude_schema_version = self.client.get_version('UGV_Attitude', self.Attitude_avro_schema)
 		'''
 			# Compatibility tests
 		'''
@@ -127,9 +136,8 @@ class RComponent:
 		'''
 		One of NONE, FULL, FORWARD, BACKWARD
 		'''
-		
-		self.new_level = self.client.update_compatibility('NONE','my_subject')
-		self.current_level = self.client.get_compatibility('my_subject')
+		#self.new_level = self.client.update_compatibility('NONE','my_subject')
+		#self.current_level = self.client.get_compatibility('my_subject')
 		'''
 		Create Serializer
 		'''
@@ -152,7 +160,7 @@ class RComponent:
 		self._state_publisher = rospy.Publisher('~state', State, queue_size=10)
 		# Subscribers
 		# topic_name, msg type, callback, queue_size
-		# self.topic_sub = rospy.Subscriber('topic_name', Int32, self.topicCb, queue_size = 10)
+		self.odom_sub = rospy.Subscriber('/odom', Odometry, self.OdomCb, queue_size = 10)
 		# Service Servers
 		# self.service_server = rospy.Service('~service', Empty, self.serviceCb)
 		# Service Clients
@@ -322,11 +330,14 @@ class RComponent:
 		now = rospy.get_rostime()
 		#rospy.loginfo("Current time %i %i", now.secs, now.nsecs)
 		
-		record = {"sourceSystem": "Testbed1", "sourceModule": "UGV Summit_XL_1", "time": now.secs}
+		Header_record = {"sourceSystem": "Testbed1", "sourceModule": "UGV Summit_XL_1", "time": now.secs}
+		Attitude_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "phi": 1.854, "theta": 3.041, "psi": 2.031}
+
 		'''
 			use the schema id directly
 		'''
-		encoded = self.serializer.encode_record_with_schema_id(self.schema_id, record)
+		encoded_Header = self.serializer.encode_record_with_schema_id(self.Header_schema_id, Header_record)
+		encoded_Attitude = self.serializer.encode_record_with_schema_id(self.Attitude_schema_id, Attitude_record)
 		'''
 		use an existing schema and topic
 		this will register the schema to the right subject based
@@ -344,12 +355,15 @@ class RComponent:
 		To send messages synchronously
 		'''
 		kafka = KafkaClient('localhost:9092')
-		producer = SimpleProducer(kafka)
+		Header_producer = SimpleProducer(kafka)
+		Attitude_producer = SimpleProducer(kafka)
 		'''
 		Kafka topic
 		'''
-		topic = "test"
-		producer.send_messages(topic, encoded)
+		Header_topic = "Header"
+		Header_producer.send_messages(Header_topic, encoded_Header)
+		Attitude_topic = "Attitude"
+		Attitude_producer.send_messages(Attitude_topic, encoded_Attitude)
 		
 		return
 		
@@ -442,17 +456,25 @@ class RComponent:
 		self.t_publish_state = threading.Timer(self.publish_state_timer, self.publishROSstate)
 		self.t_publish_state.start()
 	
-	"""
-	def topicCb(self, msg):
-		'''
-			Callback for inelfe_video_manager state
-			@param msg: received message
-			@type msg: std_msgs/Int32
-		'''
-		# DEMO
-		rospy.loginfo('RComponent:topicCb')
-
 	
+	def OdomCb(self, msg):
+		'''
+			Callback for summit_xl Odometry
+			@param msg: received message
+			@type msg: nav_msgs/Odometry
+		'''
+
+		odom_pose = msg.pose.pose;
+		odom_q = odom_pose.orientation;
+		# use the angles with orientation_euler.x, orientation_euler.y, orientation_euler.z
+		orientation_euler = tf.transformations.euler_from_quaternion( odom_q )
+		
+		# DEMO
+		rospy.loginfo('Odom received:: x:%f',odom_pose.position.x)
+		rospy.loginfo('Odom callback')
+				
+
+	"""
 	def serviceCb(self, req):
 		'''
 			ROS service server

@@ -1,17 +1,96 @@
 {
-  "namespace": "eu.rawfie.uxv",
+  "namespace": "eu.rawfie.uxv.commands",
   "name": "KeepStation",
   "type": "record",
   "doc": "",
   "fields": [
     {
       "name": "header",
-      "type": "Header",
+      "type":{
+          "type" : "record",
+          "name" : "Header",
+          "fields" : [ {
+							  "name": "sourceSystem",
+							  "type": "string",
+							  "doc": "Canonical name of the originating system"
+								},
+								{
+								"name": "sourceModule",
+								"type": "string",
+								"doc": "Canonical name of the module within a given system that originated the message"
+								},
+							{
+							  "name": "time",
+							  "type": "long",
+							  "unit": "ms",
+							  "doc": "Time elapsed since the Unix epoch"
+							}
+							]
+        },
       "doc": "Message header"
     },
     {
       "name": "location",
-      "type": "Location",
+      "type":  {
+ 
+					  "name": "Location",
+					  "type": "record",
+
+					  "fields": [
+						{
+						  "name": "latitude",
+						  "type": "double",
+						  "unit": "rad",
+						  "doc": "Latitude in the WGS 84 reference coordinate system",
+						  "min": -1.570796326794897,
+						  "max": 1.570796326794897
+						},
+						{
+						  "name": "longitude",
+						  "type": "double",
+						  "doc": "Longitude in the WGS 84 reference coordinate system",
+						  "unit": "rad",
+						  "min": -3.141592653589793,
+						  "max": 3.141592653589793
+						},
+						{
+						  "name": "height",
+						  "type": "float",
+						  "unit": "m",
+						  "doc": "Height above the WGS 84 ellipsoid"
+						},
+						{
+						  "name": "n",
+						  "type": "double",
+						  "unit": "m",
+						  "doc": "The North offset of the North/East/Down field with respect to Latitude/Longitude/Height"
+						},
+						{
+						  "name": "e",
+						  "type": "double",
+						  "unit": "m",
+						  "doc": "The East offset of the North/East/Down field with respect to Latitude/Longitude/Height"
+						},
+						{
+						  "name": "d",
+						  "type": "double",
+						  "unit": "m",
+						  "doc": "The Down offset of the North/East/Down field with respect to Latitude/Longitude/Height"
+						},
+						{
+						  "name": "depth",
+						  "type": ["float", "null"],
+						  "unit": "m",
+						  "doc": "Depth"
+						},
+						{
+						  "name": "altitude",
+						  "type": ["float", "null"],
+						  "unit": "m",
+						  "doc": "Altitude"
+						}
+					  ]
+					},
       "doc": "Desired location"
     },
     {

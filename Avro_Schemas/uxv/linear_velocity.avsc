@@ -1,8 +1,8 @@
 {
-  "namespace": "eu.rawfie.uxv.commands",
-  "name": "Abort",
+  "namespace": "eu.rawfie.uxv",
+  "name": "LinearVelocity",
   "type": "record",
-  "doc": "Stops any executing actions and put the system in a standby mode",
+  "doc": "Linear velocity vector",
   "fields": [
     {
       "name": "header",
@@ -27,7 +27,22 @@
 							}
 							]
         },
-      "doc": "Message header"
+      "doc":  "Message header"
+    },
+    {
+      "name": "x",
+      "type": "float",
+      "unit": "m/s"
+    },
+    {
+      "name": "y",
+      "type": "float",
+      "unit": "m/s"
+    },
+    {
+      "name": "z",
+      "type": "float",
+      "unit": "m/s"
     }
   ]
 }

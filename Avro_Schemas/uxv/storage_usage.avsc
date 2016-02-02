@@ -1,8 +1,8 @@
 {
-  "namespace": "eu.rawfie.uxv.commands",
-  "name": "Abort",
+  "namespace": "eu.rawfie.uxv",
+  "name": "StorageUsage",
   "type": "record",
-  "doc": "Stops any executing actions and put the system in a standby mode",
+  "doc": "Measurement of storage usage",
   "fields": [
     {
       "name": "header",
@@ -28,6 +28,18 @@
 							]
         },
       "doc": "Message header"
+    },
+    {
+      "name": "available",
+      "type": "int",
+      "unit": "MiB",
+      "doc": "The amount of available storage"
+    },
+    {
+      "name": "value",
+      "type": "int",
+      "unit": "%",
+      "doc": "The amount of used storage"
     }
   ]
 }

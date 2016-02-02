@@ -1,8 +1,8 @@
 {
-  "namespace": "eu.rawfie.uxv.commands",
-  "name": "Abort",
+  "namespace": "eu.rawfie.uxv",
+  "name": "SystemInfo",
   "type": "record",
-  "doc": "Stops any executing actions and put the system in a standby mode",
+  "doc": "General system information",
   "fields": [
     {
       "name": "header",
@@ -28,6 +28,37 @@
 							]
         },
       "doc": "Message header"
+    },
+    {
+      "name": "vendor",
+      "type": "string",
+      "doc": "System vendor"
+    },
+    {
+      "name": "model",
+      "type": "string",
+      "doc": "System model"
+    },
+    {
+      "name": "type",
+      "type": {
+  
+				"name": "SystemType",
+				"type": "enum",
+				"symbols": ["UUV", "USV", "UGV", "UAV", "FIXED"],
+				"doc": "System type"
+			},
+      "doc": "System type"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "doc": "Canonical system name"
+    },
+    {
+      "name": "owner",
+      "type": "string",
+      "doc": "System owner"
     }
   ]
 }

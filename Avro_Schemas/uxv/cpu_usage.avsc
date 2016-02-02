@@ -1,12 +1,12 @@
 {
-  "namespace": "eu.rawfie.uxv.commands",
-  "name": "Abort",
+  "namespace": "eu.rawfie.uxv",
+  "name": "CpuUsage",
   "type": "record",
-  "doc": "Stops any executing actions and put the system in a standby mode",
+  "doc": "Amount of CPU resources currently in use",
   "fields": [
     {
       "name": "header",
-      "type": {
+      "type":  {
           "type" : "record",
           "name" : "Header",
           "fields" : [ {
@@ -28,6 +28,12 @@
 							]
         },
       "doc": "Message header"
+    },
+    {
+      "name": "value",
+      "type": "int",
+      "unit": "%",
+      "doc": "Value"
     }
   ]
 }
