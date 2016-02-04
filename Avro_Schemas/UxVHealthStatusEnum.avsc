@@ -1,0 +1,6 @@
+{
+  "type" : "enum",
+  "name" : "UxVHealthStatusEnum",
+  "namespace" : "eu.rawfie.general.service.types",
+  "symbols" : [ "OK", "Warning", "Critical", "Shutdown" ]
+}

@@ -32,7 +32,9 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import rospy 
+import rospy
+import actionlib
+from move_base_msgs.msg import * 
 
 import time, threading
 
@@ -45,19 +47,22 @@ from geometry_msgs.msg import Point, Quaternion
 import tf
 
 from robotnik_msgs.msg import State
+
 from confluent.schemaregistry.client import CachedSchemaRegistryClient
 from confluent.schemaregistry.serializers import MessageSerializer, Util
-from kafka import SimpleProducer, KafkaClient
+from kafka import SimpleProducer, KafkaClient, KafkaConsumer
 import avro.schema
 import io, random
 from avro.io import DatumWriter
+
+
 
 DEFAULT_FREQ = 10.0
 MAX_FREQ = 500.0
 
 	
 # Class Template of Robotnik component for Pyhton
-class RComponent:
+class RKConsumer:
 	
 	def __init__(self, args):
 		
@@ -92,12 +97,11 @@ class RComponent:
 		
 		self.location_x = 0.0
 		self.location_y = 0.0
+		self.goal_received = False
+		self.goal_sent = False
 		
 		self.rp = rospkg.RosPack()
-		self.Header_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'header.avsc')
-		self.Attitude_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'attitude.avsc')
-		self.Location_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'location.avsc')
-		self.Status_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas', 'UxVHealthStatusEnum.avsc')
+
 			
 	def setup(self):
 		'''
@@ -105,40 +109,11 @@ class RComponent:
 			@return: True if OK, False otherwise
 		'''
 		'''
-		Some helper methods in util to get a schema
-		'''
-		
-		#avro_schema = Util.parse_schema_from_file(r'/Kafka_python/tests2/python-confluent-schemaregistry/Avro_Schemas/header.avsc')
-		#self.avro_schema = Util.parse_schema_from_string(open(r'/home/glamdring/catkin_ws/src/rawfie_interface/Avro_Schemas/header.avsc').read())
-		self.Header_avro_schema = Util.parse_schema_from_string(open(self.Header_path_file).read())
-		self.Attitude_avro_schema = Util.parse_schema_from_string(open(self.Attitude_path_file).read())
-		self.Location_avro_schema = Util.parse_schema_from_string(open(self.Location_path_file).read())
-		self.Status_avro_schema = Util.parse_schema_from_string(open(self.Status_path_file).read())
-
-		'''
 		Initialize the client
 		'''
 		
 		self.client = CachedSchemaRegistryClient(url='http://localhost:8081')
-		'''
-			# Schema operations
-		'''
-		'''
-		Register a schema for a subject
-		'''
-		
-		self.Header_schema_id = self.client.register('UGV_Header', self.Header_avro_schema)
-		self.Attitude_schema_id = self.client.register('UGV_Attitude', self.Attitude_avro_schema)
-		self.Location_schema_id = self.client.register('UGV_Location', self.Location_avro_schema)
-		self.Status_schema_id = self.client.register('UGV_Status', self.Status_avro_schema)
-		'''
-		Get the version of a schema
-		'''
-		
-		self.Header_schema_version = self.client.get_version('UGV_Header', self.Header_avro_schema)
-		self.Attitude_schema_version = self.client.get_version('UGV_Attitude', self.Attitude_avro_schema)
-		self.Location_schema_version = self.client.get_version('UGV_Location', self.Location_avro_schema)
-		self.Status_schema_version = self.client.get_version('UGV_Status', self.Status_avro_schema)
+
 		'''
 			# Compatibility tests
 		'''
@@ -170,7 +145,7 @@ class RComponent:
 		self._state_publisher = rospy.Publisher('~state', State, queue_size=10)
 		# Subscribers
 		# topic_name, msg type, callback, queue_size
-		self.odom_sub = rospy.Subscriber('/summit_xl/odom', Odometry, self.OdomCb, queue_size = 10)
+		#self.odom_sub = rospy.Subscriber('/odom', Odometry, self.OdomCb, queue_size = 10)
 		# Service Servers
 		# self.service_server = rospy.Service('~service', Empty, self.serviceCb)
 		# Service Clients
@@ -336,55 +311,92 @@ class RComponent:
 		'''
 			Actions performed in ready state
 		'''
-		
-		now = rospy.get_rostime()
-		#rospy.loginfo("Current time %i %i", now.secs, now.nsecs)
-		
-		Header_record = {"sourceSystem": "Testbed1", "sourceModule": "UGV Summit_XL_1", "time": now.secs}
-		Attitude_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "phi": self.roll, "theta": self.pitch, "psi": self.yaw}
-		Location_record = {"latitude": 0, "longitude": 0, "height": 0, "n": self.location_x, "e": self.location_y, "d": 0, "depth": 0, "altitude": 0}
-		Status_enum = {"UxVHealthStatusEnum":["OK"]}
-		#print Location_record
+		consumer = KafkaConsumer('Header',
+								 group_id='UGV_Header',
+								 bootstrap_servers=['localhost:9092'])
+								 
 
-		'''
-			use the schema id directly
-		'''
-		encoded_Header = self.serializer.encode_record_with_schema_id(self.Header_schema_id, Header_record)
-		encoded_Attitude = self.serializer.encode_record_with_schema_id(self.Attitude_schema_id, Attitude_record)
-		encoded_Location = self.serializer.encode_record_with_schema_id(self.Location_schema_id, Location_record)
-		#encoded_Status = self.serializer.encode_record_with_schema_id(self.Status_schema_id, Status_enum)
-		'''
-		use an existing schema and topic
-		this will register the schema to the right subject based
-		on the topic name and then serialize
-		'''
-		#encoded = serializer.encode_record_with_schema('my_topic', avro_schema, record)
-		'''
-		encode a record with the latest schema for the topic
-		this is not efficient as it queries for the latest
-		schema each time
-		'''
-		#encoded = serializer.encode_record_for_topic('my_kafka_topic', record)
+		attitude_consumer = KafkaConsumer('Attitude',
+								 group_id='UGV_Attitude',
+								 bootstrap_servers=['localhost:9092'])                         
 
+
+		location_consumer = KafkaConsumer('Location',
+								 group_id='UGV_Location',
+								 bootstrap_servers=['localhost:9092']) 
+								                         
+		goal_consumer = KafkaConsumer('Goal',
+								 group_id='UGV_Goal',
+								 bootstrap_servers=['localhost:9092'],
+								 consumer_timeout_ms=500)                         
+								 
+		# decode a message from kafka
 		'''
-		To send messages synchronously
+		for msg in consumer:
+			decoded_object = self.serializer.decode_message(msg.value)
+			print decoded_object
+			break
+
+		for msg in attitude_consumer:
+			attitude_decoded_object = self.serializer.decode_message(msg.value)
+			print attitude_decoded_object
+			break
+			
+		for msg in location_consumer:
+			location_decoded_object = self.serializer.decode_message(msg.value)
+			print location_decoded_object
+			break
 		'''
-		kafka = KafkaClient('localhost:9092')
-		Header_producer = SimpleProducer(kafka)
-		Attitude_producer = SimpleProducer(kafka)
-		Location_producer = SimpleProducer(kafka)
-		'''
-		Kafka topic
-		'''
-		Header_topic = "Header"
-		Header_producer.send_messages(Header_topic, encoded_Header)
-		Attitude_topic = "Attitude"
-		Attitude_producer.send_messages(Attitude_topic, encoded_Attitude)
-		Location_topic = "Location"
-		Location_producer.send_messages(Location_topic, encoded_Location)
-		Status_topic = "Status"
-		#Status_producer.send_messages(Status_topic, encoded_Status)
+		try:
+			for msg in goal_consumer:
+				goal_decoded_object = self.serializer.decode_message(msg.value)
+				goal_location = goal_decoded_object.get('location')
+				goal_x = goal_location.get('n')
+				goal_y = goal_location.get('e')
+				self.goal_received = True
+				print ("Goal Received")
+				break
+		except :
+			pass
 		
+		if self.goal_received:
+			#Simple Action Client
+			self.sac = actionlib.SimpleActionClient('move_base', MoveBaseAction )
+
+			#create goal
+			goal = MoveBaseGoal()
+			
+			#set goal
+			goal.target_pose.pose.position.x = goal_x
+			goal.target_pose.pose.orientation.w = goal_y
+			goal.target_pose.header.frame_id = 'base_link'
+			goal.target_pose.header.stamp = rospy.Time.now()
+
+			#start listner
+			print ("Waiting for server to come up")			
+			self.sac.wait_for_server()
+			#send goal
+			self.sac.send_goal(goal)
+			print ("Goal Sent")
+			self.goal_received = False
+			self.goal_sent = True
+
+		#finish
+		if self.goal_sent:
+			self.sac.wait_for_result(rospy.Duration.from_sec(5.0))
+			#print self.sac.get_state()
+				
+			if self.sac.get_state()== 3 :		   
+				rospy.loginfo("the base reached the goal")
+				self.goal_sent = False
+				print self.sac.get_result()
+							
+			if self.sac.get_state()!= 1 and self.sac.get_state()!= 3 :
+				self.sac.cancel_goal()
+				rospy.loginfo("Navigation Failed")
+				self.goal_sent = False
+				print self.sac.get_result()
+
 		return
 		
 	
@@ -476,7 +488,7 @@ class RComponent:
 		self.t_publish_state = threading.Timer(self.publish_state_timer, self.publishROSstate)
 		self.t_publish_state.start()
 	
-	
+	"""
 	def OdomCb(self, msg):
 		'''
 			Callback for summit_xl Odometry
@@ -485,22 +497,15 @@ class RComponent:
 		'''
 
 		odom_pose = msg.pose.pose;
-		odom_q = (
-			odom_pose.orientation.x,
-			odom_pose.orientation.y,
-			odom_pose.orientation.z,
-			odom_pose.orientation.w)
+		odom_q = odom_pose.orientation;
 		# use the angles with orientation_euler.x, orientation_euler.y, orientation_euler.z
-		orientation_euler = tf.transformations.euler_from_quaternion( odom_q )
-		self.roll = orientation_euler[0]
-		self.pitch = orientation_euler[1]
-		self.yaw = orientation_euler[2]
+		self.orientation_euler = tf.transformations.euler_from_quaternion( odom_q )
 		self.location_x = odom_pose.position.x
 		self.location_y = odom_pose.position.y
 		
 		# DEMO
-		#rospy.loginfo('Odom received:: x:%f',odom_pose.position.x)
-				
+		rospy.loginfo('Odom received:: x:%f',odom_pose.position.x)
+	"""			
 	"""
 	def serviceCb(self, req):
 		'''
@@ -514,7 +519,7 @@ class RComponent:
 		
 def main():
 
-	rospy.init_node("rcomponent")
+	rospy.init_node("RKConsumer")
 	
 	
 	_name = rospy.get_name().replace('/','')
@@ -537,7 +542,7 @@ def main():
 			rospy.logerr('%s: %s'%(e, _name))
 			
 	
-	rc_node = RComponent(args)
+	rc_node = RKConsumer(args)
 	
 	rospy.loginfo('%s: starting'%(_name))
 
