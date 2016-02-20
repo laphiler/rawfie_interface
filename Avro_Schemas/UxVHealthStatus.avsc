@@ -1,0 +1,29 @@
+{
+  "type" : "record",
+  "name" : "UxVHealthStatus",
+  "namespace" : "eu.rawfie.uxv.nested",
+  "fields" : [ {
+    "name" : "header",
+    "type" : {
+      "type" : "record",
+      "name" : "Header",
+      "fields" : [ {
+        "name" : "sourceSystem",
+        "type" : "string"
+      }, {
+        "name" : "sourceModule",
+        "type" : "string"
+      }, {
+        "name" : "time",
+        "type" : "long"
+      } ]
+    }
+  }, {
+    "name" : "status",
+    "type" : {
+      "type" : "enum",
+      "name" : "UxVHealthStatusEnum",
+      "symbols" : [ "OK", "Warning", "Critical", "Shutdown" ]
+    }
+  } ]
+}

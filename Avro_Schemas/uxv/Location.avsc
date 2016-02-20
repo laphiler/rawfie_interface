@@ -1,0 +1,48 @@
+{
+  "type" : "record",
+  "name" : "Location",
+  "namespace" : "eu.rawfie.uxv.nested",
+  "fields" : [ {
+    "name" : "header",
+    "type" : {
+      "type" : "record",
+      "name" : "Header",
+      "fields" : [ {
+        "name" : "sourceSystem",
+        "type" : "string"
+      }, {
+        "name" : "sourceModule",
+        "type" : "string"
+      }, {
+        "name" : "time",
+        "type" : "long"
+      } ]
+    }
+  }, {
+    "name" : "latitude",
+    "type" : "double"
+  }, {
+    "name" : "longitude",
+    "type" : "double"
+  }, {
+    "name" : "height",
+    "type" : "float"
+  }, {
+    "name" : "n",
+    "type" : "double"
+  }, {
+    "name" : "e",
+    "type" : "double"
+  }, {
+    "name" : "d",
+    "type" : "double"
+  }, {
+    "name" : "depth",
+    "type" : [ "null", "float" ],
+    "default" : null
+  }, {
+    "name" : "altitude",
+    "type" : [ "null", "float" ],
+    "default" : null
+  } ]
+}

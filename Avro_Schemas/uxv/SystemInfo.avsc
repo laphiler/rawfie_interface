@@ -1,0 +1,41 @@
+{
+  "type" : "record",
+  "name" : "SystemInfo",
+  "namespace" : "eu.rawfie.uxv.nested",
+  "fields" : [ {
+    "name" : "header",
+    "type" : {
+      "type" : "record",
+      "name" : "Header",
+      "fields" : [ {
+        "name" : "sourceSystem",
+        "type" : "string"
+      }, {
+        "name" : "sourceModule",
+        "type" : "string"
+      }, {
+        "name" : "time",
+        "type" : "long"
+      } ]
+    }
+  }, {
+    "name" : "vendor",
+    "type" : "string"
+  }, {
+    "name" : "model",
+    "type" : "string"
+  }, {
+    "name" : "type",
+    "type" : {
+      "type" : "enum",
+      "name" : "SystemType",
+      "symbols" : [ "UAV", "UGV", "USV", "AUV" ]
+    }
+  }, {
+    "name" : "name",
+    "type" : "string"
+  }, {
+    "name" : "owner",
+    "type" : "string"
+  } ]
+}

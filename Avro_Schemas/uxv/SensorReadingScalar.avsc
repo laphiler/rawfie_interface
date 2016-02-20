@@ -1,0 +1,32 @@
+{
+  "type" : "record",
+  "name" : "SensorReadingScalar",
+  "namespace" : "eu.rawfie.uxv.nested",
+  "fields" : [ {
+    "name" : "header",
+    "type" : {
+      "type" : "record",
+      "name" : "Header",
+      "fields" : [ {
+        "name" : "sourceSystem",
+        "type" : "string"
+      }, {
+        "name" : "sourceModule",
+        "type" : "string"
+      }, {
+        "name" : "time",
+        "type" : "long"
+      } ]
+    }
+  }, {
+    "name" : "value",
+    "type" : "float"
+  }, {
+    "name" : "unit",
+    "type" : {
+      "type" : "enum",
+      "name" : "Unit",
+      "symbols" : [ "AMPERE", "VOLT", "BIT", "BYTE", "KILOGRAM", "DECIBEL", "KELVIN", "PASCAL", "HERTZ", "METER", "METER_PER_SECOND", "METER_PER_SECOND_PER_SECOND", "SECOND", "SIEMENS_PER_METER", "NTU", "NEWTON", "PERCENT", "PARTS_PER_MILLION", "PARTS_PER_BILLION", "PSU", "RADIAN", "RADIAN_PER_SECOND", "ROTATION_PER_MINUTE" ]
+    }
+  } ]
+}

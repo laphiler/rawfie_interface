@@ -1,0 +1,15 @@
+{
+  "type" : "record",
+  "name" : "Header",
+  "namespace" : "eu.rawfie.uxv.nested",
+  "fields" : [ {
+    "name" : "sourceSystem",
+    "type" : "string"
+  }, {
+    "name" : "sourceModule",
+    "type" : "string"
+  }, {
+    "name" : "time",
+    "type" : "long"
+  } ]
+}

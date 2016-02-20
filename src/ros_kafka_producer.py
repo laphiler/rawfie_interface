@@ -41,13 +41,15 @@ import rospkg
 
 # Messages
 from nav_msgs.msg import Odometry
+from sensor_msgs.msg import NavSatFix
+
 from geometry_msgs.msg import Point, Quaternion
 import tf
 
 from robotnik_msgs.msg import State
 from confluent.schemaregistry.client import CachedSchemaRegistryClient
 from confluent.schemaregistry.serializers import MessageSerializer, Util
-from kafka import SimpleProducer, KafkaClient
+from kafka import SimpleProducer, KafkaClient, KafkaProducer, KeyedProducer,Murmur2Partitioner
 import avro.schema
 import io, random
 from avro.io import DatumWriter
@@ -92,12 +94,26 @@ class RComponent:
 		
 		self.location_x = 0.0
 		self.location_y = 0.0
+		self.roll = 0.0
+		self.pitch = 0.0
+		self.yaw = 0.0
+		self.battery_voltage = 53.0
+		self.battery_value = 100
+		self.minutes = 1
+		
+		self.latitude = 0.0
+		self.longitude = 0.0
+		self.altitude = 0.0
 		
 		self.rp = rospkg.RosPack()
-		self.Header_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'header.avsc')
-		self.Attitude_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'attitude.avsc')
-		self.Location_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'location.avsc')
-		self.Status_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas', 'UxVHealthStatusEnum.avsc')
+		self.Header_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'Header.avsc')
+		self.Attitude_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'Attitude.avsc')
+		self.Location_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'Location.avsc')
+		self.FuelUsage_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'FuelUsage.avsc')
+		self.SensorReadingScalar_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'SensorReadingScalar.avsc')
+		
+		
+		self.Status_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas', 'UxVHealthStatus.avsc')
 			
 	def setup(self):
 		'''
@@ -113,6 +129,10 @@ class RComponent:
 		self.Header_avro_schema = Util.parse_schema_from_string(open(self.Header_path_file).read())
 		self.Attitude_avro_schema = Util.parse_schema_from_string(open(self.Attitude_path_file).read())
 		self.Location_avro_schema = Util.parse_schema_from_string(open(self.Location_path_file).read())
+		self.FuelUsage_avro_schema = Util.parse_schema_from_string(open(self.FuelUsage_path_file).read())
+		self.SensorReadingScalar_avro_schema = Util.parse_schema_from_string(open(self.SensorReadingScalar_path_file).read())
+		
+		
 		self.Status_avro_schema = Util.parse_schema_from_string(open(self.Status_path_file).read())
 
 		'''
@@ -120,6 +140,7 @@ class RComponent:
 		'''
 		
 		self.client = CachedSchemaRegistryClient(url='http://localhost:8081')
+		#self.client = CachedSchemaRegistryClient(url='http://eagle5.di.uoa.gr:8081')
 		'''
 			# Schema operations
 		'''
@@ -130,6 +151,10 @@ class RComponent:
 		self.Header_schema_id = self.client.register('UGV_Header', self.Header_avro_schema)
 		self.Attitude_schema_id = self.client.register('UGV_Attitude', self.Attitude_avro_schema)
 		self.Location_schema_id = self.client.register('UGV_Location', self.Location_avro_schema)
+		self.FuelUsage_schema_id = self.client.register('UGV_FuelUsage', self.FuelUsage_avro_schema)
+		self.SensorReadingScalar_schema_id = self.client.register('UGV_SensorReadingScalar', self.SensorReadingScalar_avro_schema)
+		
+		
 		self.Status_schema_id = self.client.register('UGV_Status', self.Status_avro_schema)
 		'''
 		Get the version of a schema
@@ -138,6 +163,10 @@ class RComponent:
 		self.Header_schema_version = self.client.get_version('UGV_Header', self.Header_avro_schema)
 		self.Attitude_schema_version = self.client.get_version('UGV_Attitude', self.Attitude_avro_schema)
 		self.Location_schema_version = self.client.get_version('UGV_Location', self.Location_avro_schema)
+		self.FuelUsage_schema_version = self.client.get_version('UGV_FuelUsage', self.FuelUsage_avro_schema)
+		self.SensorReadingScalar_schema_version = self.client.get_version('UGV_SensorReadingScalar', self.SensorReadingScalar_avro_schema)
+		
+		
 		self.Status_schema_version = self.client.get_version('UGV_Status', self.Status_avro_schema)
 		'''
 			# Compatibility tests
@@ -171,6 +200,7 @@ class RComponent:
 		# Subscribers
 		# topic_name, msg type, callback, queue_size
 		self.odom_sub = rospy.Subscriber('/summit_xl/odom', Odometry, self.OdomCb, queue_size = 10)
+		self.gps_sub = rospy.Subscriber('/mavros/gps/fix', NavSatFix, self.GpsCb, queue_size = 10)
 		# Service Servers
 		# self.service_server = rospy.Service('~service', Empty, self.serviceCb)
 		# Service Clients
@@ -336,23 +366,40 @@ class RComponent:
 		'''
 			Actions performed in ready state
 		'''
-		
 		now = rospy.get_rostime()
 		#rospy.loginfo("Current time %i %i", now.secs, now.nsecs)
 		
-		Header_record = {"sourceSystem": "Testbed1", "sourceModule": "UGV Summit_XL_1", "time": now.secs}
+		## Battery fake value for simulation
+		if (now.secs // 60) > self.minutes:
+			self.minutes = self.minutes + 1
+			self.battery_voltage = 53.0 - self.minutes * 0.1
+		if 47.0 <= self.battery_voltage <= 53.0:
+			self.battery_value = 15.0 * self.battery_voltage - 695.0
+		if 43.0 <= self.battery_voltage <= 47.0:
+			self.battery_value = 5.0 * self.battery_voltage - 215.0
+			
+		## Record definition
+		
+		#Header_record = {"sourceSystem": "Testbed1", "sourceModule": "UGV Summit_XL_1", "time": now.secs}
 		Attitude_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "phi": self.roll, "theta": self.pitch, "psi": self.yaw}
-		Location_record = {"latitude": 0, "longitude": 0, "height": 0, "n": self.location_x, "e": self.location_y, "d": 0, "depth": 0, "altitude": 0}
-		Status_enum = {"UxVHealthStatusEnum":["OK"]}
+		Location_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs},"latitude": self.latitude, 
+								"longitude": self.longitude, "height": 0, "n": self.location_x, "e": self.location_y, "d": 0, "depth": 0, "altitude": self.altitude}
+		FuelUsage_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "value": int(self.battery_value)}
+		SensorReadingScalar_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "value": 22.5, "unit": "KELVIN"}
+		
+		
+		Status_enum = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "status": "OK"}
 		#print Location_record
 
 		'''
 			use the schema id directly
 		'''
-		encoded_Header = self.serializer.encode_record_with_schema_id(self.Header_schema_id, Header_record)
+		#encoded_Header = self.serializer.encode_record_with_schema_id(self.Header_schema_id, Header_record)
 		encoded_Attitude = self.serializer.encode_record_with_schema_id(self.Attitude_schema_id, Attitude_record)
 		encoded_Location = self.serializer.encode_record_with_schema_id(self.Location_schema_id, Location_record)
-		#encoded_Status = self.serializer.encode_record_with_schema_id(self.Status_schema_id, Status_enum)
+		encoded_FuelUsage = self.serializer.encode_record_with_schema_id(self.FuelUsage_schema_id, FuelUsage_record)
+		encoded_SensorReadingScalar = self.serializer.encode_record_with_schema_id(self.SensorReadingScalar_schema_id, SensorReadingScalar_record)
+		encoded_Status = self.serializer.encode_record_with_schema_id(self.Status_schema_id, Status_enum)
 		'''
 		use an existing schema and topic
 		this will register the schema to the right subject based
@@ -370,21 +417,59 @@ class RComponent:
 		To send messages synchronously
 		'''
 		kafka = KafkaClient('localhost:9092')
-		Header_producer = SimpleProducer(kafka)
+		#kafka = KafkaClient('eagle5.di.uoa.gr:9092')
+		
+		#Header_producer = KafkaProducer()
+		#Attitude_producer = KafkaProducer()
+		#Location_producer = KafkaProducer()
+		#FuelUsage_producer = KafkaProducer()
+		#SensorReadingScalar_producer = KafkaProducer()
+		#Status_producer = KafkaProducer()
+		
 		Attitude_producer = SimpleProducer(kafka)
 		Location_producer = SimpleProducer(kafka)
+		FuelUsage_producer = SimpleProducer(kafka)
+		SensorReadingScalar_producer = SimpleProducer(kafka)
+		Status_producer = SimpleProducer(kafka)
+		
+		Attitude_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
+		Location_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
+		FuelUsage_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
+		SensorReadingScalar_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
+		Status_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
 		'''
 		Kafka topic
 		'''
-		Header_topic = "Header"
-		Header_producer.send_messages(Header_topic, encoded_Header)
-		Attitude_topic = "Attitude"
-		Attitude_producer.send_messages(Attitude_topic, encoded_Attitude)
-		Location_topic = "Location"
-		Location_producer.send_messages(Location_topic, encoded_Location)
-		Status_topic = "Status"
-		#Status_producer.send_messages(Status_topic, encoded_Status)
+		partition = 6
+		key = "rawfie.rob.xl-1"
 		
+		#Header_topic = "Header"
+		#Header_producer.send(Header_topic, encoded_Header, key, partition)
+		Attitude_topic = "UGV_Attitude"
+		Location_topic = "UGV_Location"
+		FuelUsage_topic = "UGV_FuelUsage"
+		SensorReadingScalar_topic = "UGV_SensorReadingScalar"
+		Status_topic = "UGV_Status"
+		
+		Attitude_producer.send_messages(Attitude_topic, encoded_Attitude)
+		Location_producer.send_messages(Location_topic, encoded_Location)
+		FuelUsage_producer.send_messages(FuelUsage_topic, encoded_FuelUsage)
+		SensorReadingScalar_producer.send_messages(SensorReadingScalar_topic, encoded_SensorReadingScalar)
+		Status_producer.send_messages(Status_topic, encoded_Status)
+		
+		#KEYED TESTS
+		Attitude_keyed_topic = "Attitude2"
+		Location_keyed_topic = "Location2"
+		FuelUsage_keyed_topic = "FuelUsage2"
+		SensorReadingScalar_keyed_topic = "SensorReadingScalar2"
+		Status_keyed_topic = "Status2"
+		
+		Attitude_keyed_producer.send_messages(Attitude_keyed_topic, key, encoded_Attitude)
+		Location_keyed_producer.send_messages(Location_keyed_topic, key, encoded_Location)
+		FuelUsage_keyed_producer.send_messages(FuelUsage_keyed_topic, key, encoded_FuelUsage)
+		SensorReadingScalar_keyed_producer.send_messages(SensorReadingScalar_keyed_topic, key, encoded_SensorReadingScalar)
+		Status_keyed_producer.send_messages(Status_keyed_topic, key, encoded_Status)
+
 		return
 		
 	
@@ -497,6 +582,19 @@ class RComponent:
 		self.yaw = orientation_euler[2]
 		self.location_x = odom_pose.position.x
 		self.location_y = odom_pose.position.y
+		
+		# DEMO
+		#rospy.loginfo('Odom received:: x:%f',odom_pose.position.x)
+		
+	def GpsCb(self, msg):
+		'''
+			Callback for summit_xl Odometry
+			@param msg: received message
+			@type msg: nav_msgs/Odometry
+		'''
+		self.latitude = msg.latitude
+		self.longitude = msg.longitude
+		self.altitude = msg.altitude
 		
 		# DEMO
 		#rospy.loginfo('Odom received:: x:%f',odom_pose.position.x)

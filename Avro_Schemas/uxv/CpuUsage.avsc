@@ -1,0 +1,25 @@
+{
+  "type" : "record",
+  "name" : "CpuUsage",
+  "namespace" : "eu.rawfie.uxv.nested",
+  "fields" : [ {
+    "name" : "header",
+    "type" : {
+      "type" : "record",
+      "name" : "Header",
+      "fields" : [ {
+        "name" : "sourceSystem",
+        "type" : "string"
+      }, {
+        "name" : "sourceModule",
+        "type" : "string"
+      }, {
+        "name" : "time",
+        "type" : "long"
+      } ]
+    }
+  }, {
+    "name" : "value",
+    "type" : "int"
+  } ]
+}

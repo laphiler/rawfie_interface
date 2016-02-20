@@ -99,6 +99,7 @@ class RKConsumer:
 		self.location_y = 0.0
 		self.goal_received = False
 		self.goal_sent = False
+		self.abort_received = False
 		
 		self.rp = rospkg.RosPack()
 
@@ -113,6 +114,7 @@ class RKConsumer:
 		'''
 		
 		self.client = CachedSchemaRegistryClient(url='http://localhost:8081')
+		#self.client = CachedSchemaRegistryClient(url='http://eagle5.di.uoa.gr:8081')
 
 		'''
 			# Compatibility tests
@@ -153,6 +155,39 @@ class RKConsumer:
 		# ret = self.service_client.call(ServiceMsg)
 		
 		self.ros_initialized = True
+		
+		
+		'''
+		consumer = KafkaConsumer('Header',
+								 group_id='UGV_Header',
+								 bootstrap_servers=['localhost:9092'])
+								 
+
+		attitude_consumer = KafkaConsumer('Attitude',
+								 group_id='UGV_Attitude',
+								 bootstrap_servers=['localhost:9092'])                         
+
+
+		location_consumer = KafkaConsumer('Location',
+								 group_id='UGV_Location',
+								 bootstrap_servers=['localhost:9092']) 
+								                         
+
+		self.location_consumer = KafkaConsumer('UGV_Location',
+				 bootstrap_servers=['localhost:9092']) 
+				
+						 
+								 
+        '''                       
+		
+		goal_consumer = KafkaConsumer('UGV_Goal',
+								 group_id='UGV_Goal',
+								 bootstrap_servers=['localhost:9092'])  
+								 
+		self.abort_consumer = KafkaConsumer('UGV_Abort',
+						 bootstrap_servers=['localhost:9092'])  								 
+		
+		# 'eagle5.di.uoa.gr:9092'	
 		
 		self.publishROSstate()
 		
@@ -311,25 +346,7 @@ class RKConsumer:
 		'''
 			Actions performed in ready state
 		'''
-		consumer = KafkaConsumer('Header',
-								 group_id='UGV_Header',
-								 bootstrap_servers=['localhost:9092'])
-								 
-
-		attitude_consumer = KafkaConsumer('Attitude',
-								 group_id='UGV_Attitude',
-								 bootstrap_servers=['localhost:9092'])                         
-
-
-		location_consumer = KafkaConsumer('Location',
-								 group_id='UGV_Location',
-								 bootstrap_servers=['localhost:9092']) 
-								                         
-		goal_consumer = KafkaConsumer('Goal',
-								 group_id='UGV_Goal',
-								 bootstrap_servers=['localhost:9092'],
-								 consumer_timeout_ms=500)                         
-								 
+					 
 		# decode a message from kafka
 		'''
 		for msg in consumer:
@@ -341,23 +358,44 @@ class RKConsumer:
 			attitude_decoded_object = self.serializer.decode_message(msg.value)
 			print attitude_decoded_object
 			break
+		
+		try:
 			
-		for msg in location_consumer:
-			location_decoded_object = self.serializer.decode_message(msg.value)
-			print location_decoded_object
-			break
+			for msg in self.location_consumer:
+				location_decoded_object = self.serializer.decode_message(msg.value)
+				print location_decoded_object
+				break
+			
+		except:
+			pass
 		'''
 		try:
-			for msg in goal_consumer:
+			for msg in self.goal_consumer:
 				goal_decoded_object = self.serializer.decode_message(msg.value)
 				goal_location = goal_decoded_object.get('location')
+				goal_header = goal_decoded_object.get('header')
 				goal_x = goal_location.get('n')
 				goal_y = goal_location.get('e')
+				goal_time = goal_header.get('time')
 				self.goal_received = True
 				print ("Goal Received")
 				break
 		except :
 			pass
+		
+		try:
+			for msg in self.abort_consumer:
+				abort_decoded_object = self.serializer.decode_message(msg.value)
+				abort_header = abort_decoded_object.get('header')
+				abort_time = abort_header.get('time')
+
+				self.abort_received = True
+				print ("Abort command Received")
+				break
+		except :
+			pass
+			
+			
 		
 		if self.goal_received:
 			#Simple Action Client
@@ -391,12 +429,13 @@ class RKConsumer:
 				self.goal_sent = False
 				print self.sac.get_result()
 							
-			if self.sac.get_state()!= 1 and self.sac.get_state()!= 3 :
+			if (self.sac.get_state()!= 1 and self.sac.get_state()!= 3) or self.abort_received :
 				self.sac.cancel_goal()
 				rospy.loginfo("Navigation Failed")
 				self.goal_sent = False
+				self.abort_received = False
 				print self.sac.get_result()
-
+		
 		return
 		
 	

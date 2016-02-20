@@ -1,0 +1,6 @@
+{
+  "type" : "enum",
+  "name" : "SystemType",
+  "namespace" : "eu.rawfie.uxv.nested",
+  "symbols" : [ "UAV", "UGV", "USV", "AUV" ]
+}
