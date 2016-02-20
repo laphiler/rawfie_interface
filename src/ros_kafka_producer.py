@@ -113,7 +113,7 @@ class RComponent:
 		self.SensorReadingScalar_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'SensorReadingScalar.avsc')
 		
 		
-		self.Status_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas', 'UxVHealthStatus.avsc')
+		#self.Status_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas', 'UxVHealthStatus.avsc')
 			
 	def setup(self):
 		'''
@@ -133,7 +133,7 @@ class RComponent:
 		self.SensorReadingScalar_avro_schema = Util.parse_schema_from_string(open(self.SensorReadingScalar_path_file).read())
 		
 		
-		self.Status_avro_schema = Util.parse_schema_from_string(open(self.Status_path_file).read())
+		#self.Status_avro_schema = Util.parse_schema_from_string(open(self.Status_path_file).read())
 
 		'''
 		Initialize the client
@@ -155,7 +155,7 @@ class RComponent:
 		self.SensorReadingScalar_schema_id = self.client.register('UGV_SensorReadingScalar', self.SensorReadingScalar_avro_schema)
 		
 		
-		self.Status_schema_id = self.client.register('UGV_Status', self.Status_avro_schema)
+		#self.Status_schema_id = self.client.register('UGV_Status', self.Status_avro_schema)
 		'''
 		Get the version of a schema
 		'''
@@ -167,7 +167,7 @@ class RComponent:
 		self.SensorReadingScalar_schema_version = self.client.get_version('UGV_SensorReadingScalar', self.SensorReadingScalar_avro_schema)
 		
 		
-		self.Status_schema_version = self.client.get_version('UGV_Status', self.Status_avro_schema)
+		#self.Status_schema_version = self.client.get_version('UGV_Status', self.Status_avro_schema)
 		'''
 			# Compatibility tests
 		'''
@@ -388,7 +388,7 @@ class RComponent:
 		SensorReadingScalar_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "value": 22.5, "unit": "KELVIN"}
 		
 		
-		Status_enum = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "status": "OK"}
+		#Status_enum = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "status": "OK"}
 		#print Location_record
 
 		'''
@@ -399,7 +399,7 @@ class RComponent:
 		encoded_Location = self.serializer.encode_record_with_schema_id(self.Location_schema_id, Location_record)
 		encoded_FuelUsage = self.serializer.encode_record_with_schema_id(self.FuelUsage_schema_id, FuelUsage_record)
 		encoded_SensorReadingScalar = self.serializer.encode_record_with_schema_id(self.SensorReadingScalar_schema_id, SensorReadingScalar_record)
-		encoded_Status = self.serializer.encode_record_with_schema_id(self.Status_schema_id, Status_enum)
+		#encoded_Status = self.serializer.encode_record_with_schema_id(self.Status_schema_id, Status_enum)
 		'''
 		use an existing schema and topic
 		this will register the schema to the right subject based
@@ -430,13 +430,13 @@ class RComponent:
 		Location_producer = SimpleProducer(kafka)
 		FuelUsage_producer = SimpleProducer(kafka)
 		SensorReadingScalar_producer = SimpleProducer(kafka)
-		Status_producer = SimpleProducer(kafka)
+		#Status_producer = SimpleProducer(kafka)
 		
 		Attitude_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
 		Location_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
 		FuelUsage_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
 		SensorReadingScalar_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
-		Status_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
+		#Status_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
 		'''
 		Kafka topic
 		'''
@@ -449,26 +449,26 @@ class RComponent:
 		Location_topic = "UGV_Location"
 		FuelUsage_topic = "UGV_FuelUsage"
 		SensorReadingScalar_topic = "UGV_SensorReadingScalar"
-		Status_topic = "UGV_Status"
+		#Status_topic = "UGV_Status"
 		
 		Attitude_producer.send_messages(Attitude_topic, encoded_Attitude)
 		Location_producer.send_messages(Location_topic, encoded_Location)
 		FuelUsage_producer.send_messages(FuelUsage_topic, encoded_FuelUsage)
 		SensorReadingScalar_producer.send_messages(SensorReadingScalar_topic, encoded_SensorReadingScalar)
-		Status_producer.send_messages(Status_topic, encoded_Status)
+		#Status_producer.send_messages(Status_topic, encoded_Status)
 		
 		#KEYED TESTS
 		Attitude_keyed_topic = "Attitude2"
 		Location_keyed_topic = "Location2"
 		FuelUsage_keyed_topic = "FuelUsage2"
 		SensorReadingScalar_keyed_topic = "SensorReadingScalar2"
-		Status_keyed_topic = "Status2"
+		#Status_keyed_topic = "Status2"
 		
 		Attitude_keyed_producer.send_messages(Attitude_keyed_topic, key, encoded_Attitude)
 		Location_keyed_producer.send_messages(Location_keyed_topic, key, encoded_Location)
 		FuelUsage_keyed_producer.send_messages(FuelUsage_keyed_topic, key, encoded_FuelUsage)
 		SensorReadingScalar_keyed_producer.send_messages(SensorReadingScalar_keyed_topic, key, encoded_SensorReadingScalar)
-		Status_keyed_producer.send_messages(Status_keyed_topic, key, encoded_Status)
+		#Status_keyed_producer.send_messages(Status_keyed_topic, key, encoded_Status)
 
 		return
 		
