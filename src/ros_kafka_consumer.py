@@ -31,7 +31,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
+import WGS
 import rospy
 import actionlib
 from move_base_msgs.msg import * 
@@ -103,6 +103,8 @@ class RKConsumer:
 		
 		self.rp = rospkg.RosPack()
 
+		self.tranformWGS = WGS.WGS84toNED()
+
 			
 	def setup(self):
 		'''
@@ -113,8 +115,8 @@ class RKConsumer:
 		Initialize the client
 		'''
 		
-		self.client = CachedSchemaRegistryClient(url='http://localhost:8081')
-		#self.client = CachedSchemaRegistryClient(url='http://eagle5.di.uoa.gr:8081')
+		#self.client = CachedSchemaRegistryClient(url='http://localhost:8081')
+		self.client = CachedSchemaRegistryClient(url='http://eagle5.di.uoa.gr:8081')
 
 		'''
 			# Compatibility tests
@@ -176,19 +178,19 @@ class RKConsumer:
 		self.location_consumer = KafkaConsumer('UGV_Location',
 				 bootstrap_servers=['localhost:9092']) 
 				
-						 
+		self.abort_consumer = KafkaConsumer('UGV_Abort',
+				 bootstrap_servers=['localhost:9092'])  				 
 								 
         '''                       
 		
-		goal_consumer = KafkaConsumer('UGV_Goal',
-								 group_id='UGV_Goal',
-								 bootstrap_servers=['localhost:9092'])  
+		self.goal_consumer = KafkaConsumer('UGV_Goto',
+						bootstrap_servers=['eagle5.di.uoa.gr:9092'])  
 								 
-		self.abort_consumer = KafkaConsumer('UGV_Abort',
-						 bootstrap_servers=['localhost:9092'])  								 
+								 
 		
-		# 'eagle5.di.uoa.gr:9092'	
-		
+		# 'eagle5.di.uoa.gr:9092'
+		# 'eagle5.di.uoa.gr:2181";	
+		# 'localhost:9092'
 		self.publishROSstate()
 		
 		return 0
@@ -371,6 +373,31 @@ class RKConsumer:
 		'''
 		try:
 			for msg in self.goal_consumer:
+				
+				goal_decoded_object = self.serializer.decode_message(msg.value)
+				goal_location = goal_decoded_object.get('location')
+				goal_header = goal_decoded_object.get('header')
+				
+				#(41.186809, -8.703597) origin matosinhos/pass to radians
+				pointA = {'latitude' : 0.718845850137 , 'longitude' : -0.151905701075,'height' : 0}
+				pointB = {}
+
+				pointB['latitude'] = goal_location.get('latitude')
+				pointB['longitude'] = goal_location.get('longitude')
+				pointB['height'] = goal_location.get('height')
+				ned = self.tranformWGS.displacement(pointA,pointB)
+				print ned
+				goal_x = ned.get('north')
+				goal_y = ned.get('east')
+				goal_time = goal_header.get('time')
+				self.goal_received = True
+				print ("Goal Received")
+				break
+		except :
+			pass
+		'''	
+		try:
+			for msg in self.goal_consumer:
 				goal_decoded_object = self.serializer.decode_message(msg.value)
 				goal_location = goal_decoded_object.get('location')
 				goal_header = goal_decoded_object.get('header')
@@ -382,7 +409,8 @@ class RKConsumer:
 				break
 		except :
 			pass
-		
+		'''
+		'''	
 		try:
 			for msg in self.abort_consumer:
 				abort_decoded_object = self.serializer.decode_message(msg.value)
@@ -395,7 +423,7 @@ class RKConsumer:
 		except :
 			pass
 			
-			
+		'''	
 		
 		if self.goal_received:
 			#Simple Action Client
@@ -406,8 +434,10 @@ class RKConsumer:
 			
 			#set goal
 			goal.target_pose.pose.position.x = goal_x
-			goal.target_pose.pose.orientation.w = goal_y
-			goal.target_pose.header.frame_id = 'base_link'
+			goal.target_pose.pose.position.y = goal_y
+			goal.target_pose.pose.orientation.w = 1
+			print goal.target_pose.pose
+			goal.target_pose.header.frame_id = 'odom'
 			goal.target_pose.header.stamp = rospy.Time.now()
 
 			#start listner

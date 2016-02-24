@@ -139,8 +139,8 @@ class RComponent:
 		Initialize the client
 		'''
 		
-		self.client = CachedSchemaRegistryClient(url='http://localhost:8081')
-		#self.client = CachedSchemaRegistryClient(url='http://eagle5.di.uoa.gr:8081')
+		#self.client = CachedSchemaRegistryClient(url='http://localhost:8081')
+		self.client = CachedSchemaRegistryClient(url='http://eagle5.di.uoa.gr:8081')
 		'''
 			# Schema operations
 		'''
@@ -416,8 +416,8 @@ class RComponent:
 		'''
 		To send messages synchronously
 		'''
-		kafka = KafkaClient('localhost:9092')
-		#kafka = KafkaClient('eagle5.di.uoa.gr:9092')
+		#kafka = KafkaClient('localhost:9092')
+		kafka = KafkaClient('eagle5.di.uoa.gr:9092')
 		
 		#Header_producer = KafkaProducer()
 		#Attitude_producer = KafkaProducer()
@@ -592,8 +592,10 @@ class RComponent:
 			@param msg: received message
 			@type msg: nav_msgs/Odometry
 		'''
-		self.latitude = msg.latitude
-		self.longitude = msg.longitude
+		latitude_deg = msg.latitude
+		self.latitude = latitude_deg * (3.141592653589793238/180)
+		longitude_deg = msg.longitude
+		self.longitude = longitude_deg * (3.141592653589793238/180) 
 		self.altitude = msg.altitude
 		
 		# DEMO
