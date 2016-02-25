@@ -42,6 +42,7 @@ import rospkg
 # Messages
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
+from rescuer_ardu_ptu.msg import ardu_ptu
 
 from geometry_msgs.msg import Point, Quaternion
 import tf
@@ -104,6 +105,7 @@ class RComponent:
 		self.latitude = 0.0
 		self.longitude = 0.0
 		self.altitude = 0.0
+		self.temperature = 0.0
 		
 		self.rp = rospkg.RosPack()
 		self.Header_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'Header.avsc')
@@ -201,6 +203,8 @@ class RComponent:
 		# topic_name, msg type, callback, queue_size
 		self.odom_sub = rospy.Subscriber('/summit_xl/odom', Odometry, self.OdomCb, queue_size = 10)
 		self.gps_sub = rospy.Subscriber('/mavros/gps/fix', NavSatFix, self.GpsCb, queue_size = 10)
+		self.ptu_sub = rospy.Subscriber('/ardu_ptu/data', ardu_ptu, self.PtuCb, queue_size = 10)
+		#self.battery_sub = rospy.Subscriber('/summit_xl/battery', tipo, self.BatteryCb, queue_size = 10)
 		# Service Servers
 		# self.service_server = rospy.Service('~service', Empty, self.serviceCb)
 		# Service Clients
@@ -385,7 +389,7 @@ class RComponent:
 		Location_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs},"latitude": self.latitude, 
 								"longitude": self.longitude, "height": 0, "n": self.location_x, "e": self.location_y, "d": 0, "depth": 0, "altitude": self.altitude}
 		FuelUsage_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "value": int(self.battery_value)}
-		SensorReadingScalar_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "value": 22.5, "unit": "KELVIN"}
+		SensorReadingScalar_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "value": self.temperature , "unit": "KELVIN"}
 		
 		
 		#Status_enum = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "status": "OK"}
@@ -441,7 +445,8 @@ class RComponent:
 		Kafka topic
 		'''
 		partition = 6
-		key = "rawfie.rob.xl-1"
+		#key = "rawfie.rob.xl-1"
+		key = r"abc"
 		
 		#Header_topic = "Header"
 		#Header_producer.send(Header_topic, encoded_Header, key, partition)
@@ -600,6 +605,15 @@ class RComponent:
 		
 		# DEMO
 		#rospy.loginfo('Odom received:: x:%f',odom_pose.position.x)
+		
+	def PtuCb(self,msg):
+		
+		self.temperature = msg.temperature_1 + 273
+	'''
+	def BatteryCb(self,msg):
+		
+		self.battery = msg.temperature_1 
+	'''	
 				
 	"""
 	def serviceCb(self, req):
