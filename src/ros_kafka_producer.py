@@ -199,7 +199,7 @@ class RComponent:
 		self.odom_sub = rospy.Subscriber('/summit_xl/odom', Odometry, self.OdomCb, queue_size = 10)
 		self.gps_sub = rospy.Subscriber('/mavros/gps/fix', NavSatFix, self.GpsCb, queue_size = 10)
 		self.ptu_sub = rospy.Subscriber('/ardu_ptu/data', ardu_ptu, self.PtuCb, queue_size = 10)
-		#self.battery_sub = rospy.Subscriber('/summit_xl/battery', tipo, self.BatteryCb, queue_size = 10)
+		self.battery_sub = rospy.Subscriber('/summit_xl_controller/battery', tipo, self.BatteryCb, queue_size = 10)
 		# Service Servers
 		# self.service_server = rospy.Service('~service', Empty, self.serviceCb)
 		# Service Clients
@@ -368,10 +368,11 @@ class RComponent:
 		now = rospy.get_rostime()
 		#rospy.loginfo("Current time %i %i", now.secs, now.nsecs)
 		
-		## Battery fake value for simulation
+		''' Battery fake value for simulation
 		if (now.secs // 60) > self.minutes:
 			self.minutes = self.minutes + 1
 			self.battery_voltage = 53.0 - self.minutes * 0.1
+		'''	
 		if 47.0 <= self.battery_voltage <= 53.0:
 			self.battery_value = 15.0 * self.battery_voltage - 695.0
 		if 43.0 <= self.battery_voltage <= 47.0:
@@ -403,13 +404,13 @@ class RComponent:
 		'''
 		#kafka = KafkaClient('localhost:9092')
 		kafka = KafkaClient('eagle5.di.uoa.gr:9092')
-				
+		'''		
 		Attitude_producer = SimpleProducer(kafka)
 		Location_producer = SimpleProducer(kafka)
 		FuelUsage_producer = SimpleProducer(kafka)
 		SensorReadingScalar_producer = SimpleProducer(kafka)
-		#Status_producer = SimpleProducer(kafka)
-		
+		Status_producer = SimpleProducer(kafka)
+		'''
 		Attitude_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'])
 		Location_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'])
 		FuelUsage_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'])
@@ -420,13 +421,13 @@ class RComponent:
 		'''
 		partition = 6
 		#key = "rawfie.rob.xl-1"
-		
+		'''
 		Attitude_topic = "UGV_Attitude"
 		Location_topic = "UGV_Location"
 		FuelUsage_topic = "UGV_FuelUsage"
 		SensorReadingScalar_topic = "UGV_SensorReadingScalar"
-		#Status_topic = "UGV_Status"
-		
+		Status_topic = "UGV_Status"
+		'''
 		Attitude_producer.send_messages(Attitude_topic, encoded_Attitude)
 		Location_producer.send_messages(Location_topic, encoded_Location)
 		FuelUsage_producer.send_messages(FuelUsage_topic, encoded_FuelUsage)
@@ -614,11 +615,11 @@ class RComponent:
 	def PtuCb(self,msg):
 		
 		self.temperature = msg.temperature_1 + 273
-	'''
+	
 	def BatteryCb(self,msg):
 		
-		self.battery = msg.temperature_1 
-	'''	
+		self.battery_voltage = msg.data 
+	
 				
 	"""
 	def serviceCb(self, req):
