@@ -50,7 +50,7 @@ catkin_package(
     INCLUDE_DIRS include
 #  LIBRARIES rcomponent
 #  CATKIN_DEPENDS roscpp std_msgs
-  DEPENDS rdkafka++ rdkafka avrocpp
+#  DEPENDS rdkafka++ rdkafka avrocpp
 )
 
 
@@ -69,8 +69,8 @@ include_directories(
 ## Declare a cpp executable
 #add_executable(rcomponent_node src/rcomponent.cpp)
 
-add_executable(RwfInterface src/rdkafka_producer.cpp)
-add_executable(RwfConsumerInterface src/rdkafka_consumer.cpp)
+#add_executable(RwfInterface src/rdkafka_producer.cpp)
+#add_executable(RwfConsumerInterface src/rdkafka_consumer.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -82,15 +82,9 @@ add_executable(RwfConsumerInterface src/rdkafka_consumer.cpp)
 #   ${catkin_LIBRARIES}
 #)
 
-target_link_libraries(RwfInterface
-  rdkafka++
-  rdkafka
-  avrocpp
-  ${catkin_LIBRARIES} 
-)
-target_link_libraries(RwfConsumerInterface
-  rdkafka++
-  rdkafka
-  avrocpp
-  ${catkin_LIBRARIES} 
-)
+#target_link_libraries(RwfInterface
+#  rdkafka++
+#  rdkafka
+#  avrocpp
+  #${catkin_LIBRARIES} 
+#)
