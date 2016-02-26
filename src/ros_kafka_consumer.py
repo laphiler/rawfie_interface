@@ -118,15 +118,7 @@ class RKConsumer:
 		#self.client = CachedSchemaRegistryClient(url='http://localhost:8081')
 		self.client = CachedSchemaRegistryClient(url='http://eagle5.di.uoa.gr:8081')
 
-		'''
-			# Compatibility tests
-		'''
-		#is_compatible = client.test_compatibility('my_subject', another_schema)
-		'''
-		One of NONE, FULL, FORWARD, BACKWARD
-		'''
-		#self.new_level = self.client.update_compatibility('NONE','my_subject')
-		#self.current_level = self.client.get_compatibility('my_subject')
+
 		'''
 		Create Serializer
 		'''
@@ -158,32 +150,9 @@ class RKConsumer:
 		
 		self.ros_initialized = True
 		
+                
 		
-		'''
-		consumer = KafkaConsumer('Header',
-								 group_id='UGV_Header',
-								 bootstrap_servers=['localhost:9092'])
-								 
-
-		attitude_consumer = KafkaConsumer('Attitude',
-								 group_id='UGV_Attitude',
-								 bootstrap_servers=['localhost:9092'])                         
-
-
-		location_consumer = KafkaConsumer('Location',
-								 group_id='UGV_Location',
-								 bootstrap_servers=['localhost:9092']) 
-								                         
-
-		self.location_consumer = KafkaConsumer('UGV_Location',
-				 bootstrap_servers=['localhost:9092']) 
-				
-		self.abort_consumer = KafkaConsumer('UGV_Abort',
-				 bootstrap_servers=['localhost:9092'])  				 
-								 
-        '''                       
-		
-		self.goal_consumer = KafkaConsumer('UGV_Goto',
+		self.goal_consumer = KafkaConsumer('Goto',
 						bootstrap_servers=['eagle5.di.uoa.gr:9092'])  
 								 
 								 
@@ -350,66 +319,35 @@ class RKConsumer:
 		'''
 					 
 		# decode a message from kafka
-		'''
-		for msg in consumer:
-			decoded_object = self.serializer.decode_message(msg.value)
-			print decoded_object
-			break
 
-		for msg in attitude_consumer:
-			attitude_decoded_object = self.serializer.decode_message(msg.value)
-			print attitude_decoded_object
-			break
-		
-		try:
-			
-			for msg in self.location_consumer:
-				location_decoded_object = self.serializer.decode_message(msg.value)
-				print location_decoded_object
-				break
-			
-		except:
-			pass
-		'''
 		try:
 			for msg in self.goal_consumer:
-				
-				goal_decoded_object = self.serializer.decode_message(msg.value)
-				goal_location = goal_decoded_object.get('location')
-				goal_header = goal_decoded_object.get('header')
-				
-				#(41.186809, -8.703597) origin matosinhos/pass to radians
-				pointA = {'latitude' : 0.718845850137 , 'longitude' : -0.151905701075,'height' : 0}
-				pointB = {}
+				if msg.partition = 6:
+					goal_decoded_object = self.serializer.decode_message(msg.value)
+					goal_location = goal_decoded_object.get('location')
+					goal_header = goal_decoded_object.get('header')
+					
+					#(41.186809, -8.703597) origin matosinhos/pass to radians
+					pointA = {'latitude' : 0.718845850137 , 'longitude' : -0.151905701075,'height' : 0}
+					pointB = {}
 
-				pointB['latitude'] = goal_location.get('latitude')
-				pointB['longitude'] = goal_location.get('longitude')
-				pointB['height'] = goal_location.get('height')
-				ned = self.tranformWGS.displacement(pointA,pointB)
-				print ned
-				goal_x = ned.get('north')
-				goal_y = ned.get('east')
-				goal_time = goal_header.get('time')
-				self.goal_received = True
-				print ("Goal Received")
-				break
+					pointB['latitude'] = goal_location.get('latitude')
+					pointB['longitude'] = goal_location.get('longitude')
+					pointB['height'] = goal_location.get('height')
+					ned = self.tranformWGS.displacement(pointA,pointB)
+					print ned
+					goal_x = ned.get('north')
+					goal_y = ned.get('east')
+					goal_time = goal_header.get('time')
+					self.goal_received = True
+					print ("Goal Received")
+					break
+				else:
+					print ("Nothing in partition 6")
+					break
 		except :
 			pass
-		'''	
-		try:
-			for msg in self.goal_consumer:
-				goal_decoded_object = self.serializer.decode_message(msg.value)
-				goal_location = goal_decoded_object.get('location')
-				goal_header = goal_decoded_object.get('header')
-				goal_x = goal_location.get('n')
-				goal_y = goal_location.get('e')
-				goal_time = goal_header.get('time')
-				self.goal_received = True
-				print ("Goal Received")
-				break
-		except :
-			pass
-		'''
+
 		'''	
 		try:
 			for msg in self.abort_consumer:
@@ -557,24 +495,7 @@ class RKConsumer:
 		self.t_publish_state = threading.Timer(self.publish_state_timer, self.publishROSstate)
 		self.t_publish_state.start()
 	
-	"""
-	def OdomCb(self, msg):
-		'''
-			Callback for summit_xl Odometry
-			@param msg: received message
-			@type msg: nav_msgs/Odometry
-		'''
-
-		odom_pose = msg.pose.pose;
-		odom_q = odom_pose.orientation;
-		# use the angles with orientation_euler.x, orientation_euler.y, orientation_euler.z
-		self.orientation_euler = tf.transformations.euler_from_quaternion( odom_q )
-		self.location_x = odom_pose.position.x
-		self.location_y = odom_pose.position.y
 		
-		# DEMO
-		rospy.loginfo('Odom received:: x:%f',odom_pose.position.x)
-	"""			
 	"""
 	def serviceCb(self, req):
 		'''

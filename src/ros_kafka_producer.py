@@ -108,7 +108,6 @@ class RComponent:
 		self.temperature = 0.0
 		
 		self.rp = rospkg.RosPack()
-		self.Header_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'Header.avsc')
 		self.Attitude_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'Attitude.avsc')
 		self.Location_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'Location.avsc')
 		self.FuelUsage_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'FuelUsage.avsc')
@@ -126,9 +125,7 @@ class RComponent:
 		Some helper methods in util to get a schema
 		'''
 		
-		#avro_schema = Util.parse_schema_from_file(r'/Kafka_python/tests2/python-confluent-schemaregistry/Avro_Schemas/header.avsc')
-		#self.avro_schema = Util.parse_schema_from_string(open(r'/home/glamdring/catkin_ws/src/rawfie_interface/Avro_Schemas/header.avsc').read())
-		self.Header_avro_schema = Util.parse_schema_from_string(open(self.Header_path_file).read())
+
 		self.Attitude_avro_schema = Util.parse_schema_from_string(open(self.Attitude_path_file).read())
 		self.Location_avro_schema = Util.parse_schema_from_string(open(self.Location_path_file).read())
 		self.FuelUsage_avro_schema = Util.parse_schema_from_string(open(self.FuelUsage_path_file).read())
@@ -150,7 +147,6 @@ class RComponent:
 		Register a schema for a subject
 		'''
 		
-		self.Header_schema_id = self.client.register('UGV_Header', self.Header_avro_schema)
 		self.Attitude_schema_id = self.client.register('UGV_Attitude', self.Attitude_avro_schema)
 		self.Location_schema_id = self.client.register('UGV_Location', self.Location_avro_schema)
 		self.FuelUsage_schema_id = self.client.register('UGV_FuelUsage', self.FuelUsage_avro_schema)
@@ -162,7 +158,6 @@ class RComponent:
 		Get the version of a schema
 		'''
 		
-		self.Header_schema_version = self.client.get_version('UGV_Header', self.Header_avro_schema)
 		self.Attitude_schema_version = self.client.get_version('UGV_Attitude', self.Attitude_avro_schema)
 		self.Location_schema_version = self.client.get_version('UGV_Location', self.Location_avro_schema)
 		self.FuelUsage_schema_version = self.client.get_version('UGV_FuelUsage', self.FuelUsage_avro_schema)
@@ -384,72 +379,48 @@ class RComponent:
 			
 		## Record definition
 		
-		#Header_record = {"sourceSystem": "Testbed1", "sourceModule": "UGV Summit_XL_1", "time": now.secs}
-		Attitude_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "phi": self.roll, "theta": self.pitch, "psi": self.yaw}
-		Location_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs},"latitude": self.latitude, 
-								"longitude": self.longitude, "height": 0, "n": self.location_x, "e": self.location_y, "d": 0, "depth": 0, "altitude": self.altitude}
-		FuelUsage_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "value": int(self.battery_value)}
-		SensorReadingScalar_record = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "value": self.temperature , "unit": "KELVIN"}
+		Attitude_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "Navigation", "time": now.secs}, "phi": self.roll, "theta": self.pitch, "psi": self.yaw}
+		Location_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "Navigation", "time": now.secs},"latitude": self.latitude, 
+								"longitude": self.longitude, "height": self.altitude, "n": self.location_x, "e": self.location_y, "d": 0, "depth": 0, "altitude": 0}
+		FuelUsage_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "value": int(self.battery_value)}
+		SensorReadingScalar_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "value": self.temperature , "unit": "KELVIN"}
 		
 		
 		#Status_enum = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "status": "OK"}
-		#print Location_record
 
 		'''
 			use the schema id directly
 		'''
-		#encoded_Header = self.serializer.encode_record_with_schema_id(self.Header_schema_id, Header_record)
 		encoded_Attitude = self.serializer.encode_record_with_schema_id(self.Attitude_schema_id, Attitude_record)
 		encoded_Location = self.serializer.encode_record_with_schema_id(self.Location_schema_id, Location_record)
 		encoded_FuelUsage = self.serializer.encode_record_with_schema_id(self.FuelUsage_schema_id, FuelUsage_record)
 		encoded_SensorReadingScalar = self.serializer.encode_record_with_schema_id(self.SensorReadingScalar_schema_id, SensorReadingScalar_record)
 		#encoded_Status = self.serializer.encode_record_with_schema_id(self.Status_schema_id, Status_enum)
-		'''
-		use an existing schema and topic
-		this will register the schema to the right subject based
-		on the topic name and then serialize
-		'''
-		#encoded = serializer.encode_record_with_schema('my_topic', avro_schema, record)
-		'''
-		encode a record with the latest schema for the topic
-		this is not efficient as it queries for the latest
-		schema each time
-		'''
-		#encoded = serializer.encode_record_for_topic('my_kafka_topic', record)
+
 
 		'''
 		To send messages synchronously
 		'''
 		#kafka = KafkaClient('localhost:9092')
 		kafka = KafkaClient('eagle5.di.uoa.gr:9092')
-		
-		#Header_producer = KafkaProducer()
-		#Attitude_producer = KafkaProducer()
-		#Location_producer = KafkaProducer()
-		#FuelUsage_producer = KafkaProducer()
-		#SensorReadingScalar_producer = KafkaProducer()
-		#Status_producer = KafkaProducer()
-		
+				
 		Attitude_producer = SimpleProducer(kafka)
 		Location_producer = SimpleProducer(kafka)
 		FuelUsage_producer = SimpleProducer(kafka)
 		SensorReadingScalar_producer = SimpleProducer(kafka)
 		#Status_producer = SimpleProducer(kafka)
 		
-		Attitude_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
-		Location_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
-		FuelUsage_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
-		SensorReadingScalar_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
+		Attitude_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'])
+		Location_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'])
+		FuelUsage_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'])
+		SensorReadingScalar_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'])
 		#Status_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
 		'''
 		Kafka topic
 		'''
 		partition = 6
 		#key = "rawfie.rob.xl-1"
-		key = r"abc"
 		
-		#Header_topic = "Header"
-		#Header_producer.send(Header_topic, encoded_Header, key, partition)
 		Attitude_topic = "UGV_Attitude"
 		Location_topic = "UGV_Location"
 		FuelUsage_topic = "UGV_FuelUsage"
@@ -463,17 +434,51 @@ class RComponent:
 		#Status_producer.send_messages(Status_topic, encoded_Status)
 		
 		#KEYED TESTS
-		Attitude_keyed_topic = "Attitude2"
-		Location_keyed_topic = "Location2"
-		FuelUsage_keyed_topic = "FuelUsage2"
-		SensorReadingScalar_keyed_topic = "SensorReadingScalar2"
+		Attitude_keyed_topic = "Attitude"
+		Location_keyed_topic = "Location"
+		FuelUsage_keyed_topic = "FuelUsage"
+		SensorReadingScalar_keyed_topic = "SensorReadingScalar"
 		#Status_keyed_topic = "Status2"
 		
-		Attitude_keyed_producer.send_messages(Attitude_keyed_topic, key, encoded_Attitude)
-		Location_keyed_producer.send_messages(Location_keyed_topic, key, encoded_Location)
-		FuelUsage_keyed_producer.send_messages(FuelUsage_keyed_topic, key, encoded_FuelUsage)
-		SensorReadingScalar_keyed_producer.send_messages(SensorReadingScalar_keyed_topic, key, encoded_SensorReadingScalar)
-		#Status_keyed_producer.send_messages(Status_keyed_topic, key, encoded_Status)
+		# Asynchronous by default
+		Attitude_future = Attitude_keyed_producer.send(Attitude_keyed_topic, partition=6, value=encoded_Attitude)
+		# Block for 'synchronous' sends
+		try:
+			Attitude_record_metadata = Attitude_future.get(timeout=10)
+		except KafkaError:
+			# Decide what to do if produce request failed...
+			log.exception()
+			pass
+			
+		# Asynchronous by default
+		Location_future = Location_keyed_producer.send(Location_keyed_topic, partition=6, value=encoded_Location)
+		# Block for 'synchronous' sends
+		try:
+			Location_record_metadata = Location_future.get(timeout=10)
+		except KafkaError:
+			# Decide what to do if produce request failed...
+			log.exception()
+			pass
+			
+		# Asynchronous by default
+		FuelUsage_future = FuelUsage_keyed_producer.send(FuelUsage_keyed_topic, partition=6, value=encoded_FuelUsage)
+		# Block for 'synchronous' sends
+		try:
+			FuelUsage_record_metadata = FuelUsage_future.get(timeout=10)
+		except KafkaError:
+			# Decide what to do if produce request failed...
+			log.exception()
+			pass
+			
+		# Asynchronous by default
+		SensorReadingScalar_future = SensorReadingScalar_keyed_producer.send(SensorReadingScalar_keyed_topic, partition=6, value=encoded_SensorReadingScalar)
+		# Block for 'synchronous' sends
+		try:
+			SensorReadingScalar_record_metadata = SensorReadingScalar_future.get(timeout=10)
+		except KafkaError:
+			# Decide what to do if produce request failed...
+			log.exception()
+			pass
 
 		return
 		
