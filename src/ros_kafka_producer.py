@@ -197,7 +197,8 @@ class RComponent:
 		self._state_publisher = rospy.Publisher('~state', State, queue_size=10)
 		# Subscribers
 		# topic_name, msg type, callback, queue_size
-		self.odom_sub = rospy.Subscriber('/summit_xl/odom', Odometry, self.OdomCb, queue_size = 10)
+		#self.odom_sub = rospy.Subscriber('/summit_xl/odom', Odometry, self.OdomCb, queue_size = 10)
+		self.odom_sub = rospy.Subscriber('/odom', Odometry, self.OdomCb, queue_size = 10)
 		self.gps_sub = rospy.Subscriber('/mavros/gps/fix', NavSatFix, self.GpsCb, queue_size = 10)
 		self.ptu_sub = rospy.Subscriber('/ardu_ptu/data', ardu_ptu, self.PtuCb, queue_size = 10)
 		self.battery_sub = rospy.Subscriber('/summit_xl_controller/battery', Float32, self.BatteryCb, queue_size = 10)
