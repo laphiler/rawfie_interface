@@ -182,6 +182,12 @@ class RComponent:
 		Create Serializer
 		'''
 		
+		self.Attitude_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
+		self.Location_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
+		self.FuelUsage_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
+		self.SensorReadingScalar_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
+		
+		
 		self.serializer = MessageSerializer(self.client)
 		
 		self.initialized = True
@@ -417,10 +423,7 @@ class RComponent:
 		SensorReadingScalar_producer = SimpleProducer(kafka)
 		Status_producer = SimpleProducer(kafka)
 		'''
-		Attitude_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
-		Location_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
-		FuelUsage_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
-		SensorReadingScalar_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
+
 		#Status_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
 		'''
 		Kafka topic
@@ -448,7 +451,7 @@ class RComponent:
 		#Status_keyed_topic = "Status2"
 		
 		# Asynchronous by default
-		Attitude_future = Attitude_keyed_producer.send(Attitude_keyed_topic, partition=6, value=encoded_Attitude)
+		Attitude_future = self.Attitude_keyed_producer.send(Attitude_keyed_topic, partition=6, value=encoded_Attitude)
 		# Block for 'synchronous' sends
 		'''
 		try:
@@ -459,7 +462,7 @@ class RComponent:
 			pass
 		'''	
 		# Asynchronous by default
-		Location_future = Location_keyed_producer.send(Location_keyed_topic, partition=6, value=encoded_Location)
+		Location_future = self.Location_keyed_producer.send(Location_keyed_topic, partition=6, value=encoded_Location)
 		'''
 		# Block for 'synchronous' sends
 		try:
@@ -470,7 +473,7 @@ class RComponent:
 			pass
 		'''	
 		# Asynchronous by default
-		FuelUsage_future = FuelUsage_keyed_producer.send(FuelUsage_keyed_topic, partition=6, value=encoded_FuelUsage)
+		FuelUsage_future = self.FuelUsage_keyed_producer.send(FuelUsage_keyed_topic, partition=6, value=encoded_FuelUsage)
 		'''
 		# Block for 'synchronous' sends
 		try:
@@ -481,7 +484,7 @@ class RComponent:
 			pass
 		'''	
 		# Asynchronous by default
-		SensorReadingScalar_future = SensorReadingScalar_keyed_producer.send(SensorReadingScalar_keyed_topic, partition=6, value=encoded_SensorReadingScalar)
+		SensorReadingScalar_future = self.SensorReadingScalar_keyed_producer.send(SensorReadingScalar_keyed_topic, partition=6, value=encoded_SensorReadingScalar)
 		'''
 		# Block for 'synchronous' sends
 		try:
