@@ -114,6 +114,9 @@ class RComponent:
 		self.FuelUsage_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'FuelUsage.avsc')
 		self.SensorReadingScalar_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'SensorReadingScalar.avsc')
 		
+		#kafka = KafkaClient('localhost:9092')
+		kafka = KafkaClient('eagle5.di.uoa.gr:9092')
+		
 		
 		#self.Status_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas', 'UxVHealthStatus.avsc')
 			
@@ -406,8 +409,7 @@ class RComponent:
 		'''
 		To send messages synchronously
 		'''
-		#kafka = KafkaClient('localhost:9092')
-		kafka = KafkaClient('eagle5.di.uoa.gr:9092')
+
 		'''		
 		Attitude_producer = SimpleProducer(kafka)
 		Location_producer = SimpleProducer(kafka)
