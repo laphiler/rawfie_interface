@@ -56,7 +56,7 @@ import avro.schema
 import io, random
 from avro.io import DatumWriter
 
-DEFAULT_FREQ = 10.0
+DEFAULT_FREQ = 10
 MAX_FREQ = 500.0
 
 	
@@ -382,10 +382,12 @@ class RComponent:
 		## Record definition
 		
 		Attitude_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "Navigation", "time": now.secs}, "phi": self.roll, "theta": self.pitch, "psi": self.yaw}
-		Location_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "Navigation", "time": now.secs},"latitude": self.latitude, 
-								"longitude": self.longitude, "height": self.altitude, "n": self.location_x, "e": self.location_y, "d": 0 }
+		#Location_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "Navigation", "time": now.secs},"latitude": self.latitude, 
+		#						"longitude": self.longitude, "height": self.altitude, "n": self.location_x, "e": self.location_y, "d": 0 }
+		Location_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "Navigation", "time": now.secs},"latitude": 0.718845850137, 
+								"longitude":-0.151905701075, "height": self.altitude, "n": self.location_x, "e": self.location_y, "d": 0 }
 		FuelUsage_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "value": int(self.battery_value)}
-		SensorReadingScalar_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "value": self.temperature , "unit": "KELVIN"}
+		SensorReadingScalar_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "PTU", "time": now.secs}, "value": self.temperature , "unit": "KELVIN"}
 		
 		
 		#Status_enum = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "status": "OK"}
@@ -412,10 +414,10 @@ class RComponent:
 		SensorReadingScalar_producer = SimpleProducer(kafka)
 		Status_producer = SimpleProducer(kafka)
 		'''
-		Attitude_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'])
-		Location_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'])
-		FuelUsage_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'])
-		SensorReadingScalar_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'])
+		Attitude_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
+		Location_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
+		FuelUsage_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
+		SensorReadingScalar_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
 		#Status_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
 		'''
 		Kafka topic
@@ -445,43 +447,47 @@ class RComponent:
 		# Asynchronous by default
 		Attitude_future = Attitude_keyed_producer.send(Attitude_keyed_topic, partition=6, value=encoded_Attitude)
 		# Block for 'synchronous' sends
+		'''
 		try:
-			Attitude_record_metadata = Attitude_future.get(timeout=5)
+			Attitude_record_metadata = Attitude_future.get()
 		except KafkaError:
 			# Decide what to do if produce request failed...
 			log.exception()
 			pass
-			
+		'''	
 		# Asynchronous by default
 		Location_future = Location_keyed_producer.send(Location_keyed_topic, partition=6, value=encoded_Location)
+		'''
 		# Block for 'synchronous' sends
 		try:
-			Location_record_metadata = Location_future.get(timeout=5)
+			Location_record_metadata = Location_future.get()
 		except KafkaError:
 			# Decide what to do if produce request failed...
 			log.exception()
 			pass
-			
+		'''	
 		# Asynchronous by default
 		FuelUsage_future = FuelUsage_keyed_producer.send(FuelUsage_keyed_topic, partition=6, value=encoded_FuelUsage)
+		'''
 		# Block for 'synchronous' sends
 		try:
-			FuelUsage_record_metadata = FuelUsage_future.get(timeout=5)
+			FuelUsage_record_metadata = FuelUsage_future.get()
 		except KafkaError:
 			# Decide what to do if produce request failed...
 			log.exception()
 			pass
-			
+		'''	
 		# Asynchronous by default
 		SensorReadingScalar_future = SensorReadingScalar_keyed_producer.send(SensorReadingScalar_keyed_topic, partition=6, value=encoded_SensorReadingScalar)
+		'''
 		# Block for 'synchronous' sends
 		try:
-			SensorReadingScalar_record_metadata = SensorReadingScalar_future.get(timeout=5)
+			SensorReadingScalar_record_metadata = SensorReadingScalar_future.get()
 		except KafkaError:
 			# Decide what to do if produce request failed...
 			log.exception()
 			pass
-
+		'''
 		return
 		
 	
