@@ -428,13 +428,13 @@ class RComponent:
 		FuelUsage_topic = "UGV_FuelUsage"
 		SensorReadingScalar_topic = "UGV_SensorReadingScalar"
 		Status_topic = "UGV_Status"
-		'''
+		
 		Attitude_producer.send_messages(Attitude_topic, encoded_Attitude)
 		Location_producer.send_messages(Location_topic, encoded_Location)
 		FuelUsage_producer.send_messages(FuelUsage_topic, encoded_FuelUsage)
 		SensorReadingScalar_producer.send_messages(SensorReadingScalar_topic, encoded_SensorReadingScalar)
 		#Status_producer.send_messages(Status_topic, encoded_Status)
-		
+		'''
 		#KEYED TESTS
 		Attitude_keyed_topic = "Attitude"
 		Location_keyed_topic = "Location"
