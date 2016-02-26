@@ -199,7 +199,7 @@ class RComponent:
 		self.odom_sub = rospy.Subscriber('/summit_xl/odom', Odometry, self.OdomCb, queue_size = 10)
 		self.gps_sub = rospy.Subscriber('/mavros/gps/fix', NavSatFix, self.GpsCb, queue_size = 10)
 		self.ptu_sub = rospy.Subscriber('/ardu_ptu/data', ardu_ptu, self.PtuCb, queue_size = 10)
-		self.battery_sub = rospy.Subscriber('/summit_xl_controller/battery', tipo, self.BatteryCb, queue_size = 10)
+		self.battery_sub = rospy.Subscriber('/summit_xl_controller/battery', std_msgs/Float32, self.BatteryCb, queue_size = 10)
 		# Service Servers
 		# self.service_server = rospy.Service('~service', Empty, self.serviceCb)
 		# Service Clients
