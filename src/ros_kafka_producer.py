@@ -446,7 +446,7 @@ class RComponent:
 		Attitude_future = Attitude_keyed_producer.send(Attitude_keyed_topic, partition=6, value=encoded_Attitude)
 		# Block for 'synchronous' sends
 		try:
-			Attitude_record_metadata = Attitude_future.get(timeout=10)
+			Attitude_record_metadata = Attitude_future.get(timeout=5)
 		except KafkaError:
 			# Decide what to do if produce request failed...
 			log.exception()
@@ -456,7 +456,7 @@ class RComponent:
 		Location_future = Location_keyed_producer.send(Location_keyed_topic, partition=6, value=encoded_Location)
 		# Block for 'synchronous' sends
 		try:
-			Location_record_metadata = Location_future.get(timeout=10)
+			Location_record_metadata = Location_future.get(timeout=5)
 		except KafkaError:
 			# Decide what to do if produce request failed...
 			log.exception()
@@ -466,7 +466,7 @@ class RComponent:
 		FuelUsage_future = FuelUsage_keyed_producer.send(FuelUsage_keyed_topic, partition=6, value=encoded_FuelUsage)
 		# Block for 'synchronous' sends
 		try:
-			FuelUsage_record_metadata = FuelUsage_future.get(timeout=10)
+			FuelUsage_record_metadata = FuelUsage_future.get(timeout=5)
 		except KafkaError:
 			# Decide what to do if produce request failed...
 			log.exception()
@@ -476,7 +476,7 @@ class RComponent:
 		SensorReadingScalar_future = SensorReadingScalar_keyed_producer.send(SensorReadingScalar_keyed_topic, partition=6, value=encoded_SensorReadingScalar)
 		# Block for 'synchronous' sends
 		try:
-			SensorReadingScalar_record_metadata = SensorReadingScalar_future.get(timeout=10)
+			SensorReadingScalar_record_metadata = SensorReadingScalar_future.get(timeout=5)
 		except KafkaError:
 			# Decide what to do if produce request failed...
 			log.exception()

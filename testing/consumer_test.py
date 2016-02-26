@@ -20,9 +20,10 @@ consumer = KafkaConsumer('Location',
 
 
 for msg in consumer:
-	print msg
-	decoded_object = serializer.decode_message(msg.value)
-	print decoded_object
+	print msg.partition
+	if msg.partition == 6 :
+		decoded_object = serializer.decode_message(msg.value)
+		print decoded_object
                                                  
 '''
 location_consumer = KafkaConsumer('UGV_Location',
