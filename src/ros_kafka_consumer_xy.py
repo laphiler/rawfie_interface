@@ -327,17 +327,8 @@ class RKConsumer:
 					goal_location = goal_decoded_object.get('location')
 					goal_header = goal_decoded_object.get('header')
 					
-					#(41.186809, -8.703597) origin matosinhos/pass to radians
-					pointA = {'latitude' : 0.718845850137 , 'longitude' : -0.151905701075,'height' : 0}
-					pointB = {}
-
-					pointB['latitude'] = goal_location.get('latitude')
-					pointB['longitude'] = goal_location.get('longitude')
-					pointB['height'] = goal_location.get('height')
-					ned = self.tranformWGS.displacement(pointA,pointB)
-					print ned
-					goal_x = ned.get('north')
-					goal_y = ned.get('east')
+					goal_x = goal_location.get('n')
+					goal_y = goal_location.get('e')
 					goal_time = goal_header.get('time')
 					self.goal_received = True
 					print ("Goal Received")

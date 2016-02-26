@@ -54,7 +54,7 @@ catkin_package(
 )
 
 
-catkin_install_python(PROGRAMS src/ros_kafka_producer.py src/ros_kafka_consumer.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+catkin_install_python(PROGRAMS src/ros_kafka_producer.py src/ros_kafka_consumer.py src/ros_kafka_consumer_xy.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 ###########
 ## Build ##
