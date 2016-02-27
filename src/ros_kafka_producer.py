@@ -542,7 +542,7 @@ class RComponent:
 		self.pitch = orientation_euler[1]
 		self.yaw = orientation_euler[2]
 		self.location_x = odom_pose.position.x
-		self.location_y = odom_pose.position.y
+		self.location_y = -1 * odom_pose.position.y
 		
 		# DEMO
 		#rospy.loginfo('Odom received:: x:%f',odom_pose.position.x)
