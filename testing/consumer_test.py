@@ -23,8 +23,8 @@ for msg in consumer:
 	#print msg.partition
 	if msg.partition == 6 :
 		decoded_object = serializer.decode_message(msg.value)
-		print decoded_object.get('n')
-		print decoded_object.get('e')
+		print ("x:",decoded_object.get('n'))
+		print ("y",decoded_object.get('e'))
                                                  
 '''
 location_consumer = KafkaConsumer('UGV_Location',
