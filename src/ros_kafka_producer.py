@@ -169,17 +169,9 @@ class RComponent:
 		
 		
 		#self.Status_schema_version = self.client.get_version('UGV_Status', self.Status_avro_schema)
+
 		'''
-			# Compatibility tests
-		'''
-		#is_compatible = client.test_compatibility('my_subject', another_schema)
-		'''
-		One of NONE, FULL, FORWARD, BACKWARD
-		'''
-		#self.new_level = self.client.update_compatibility('NONE','my_subject')
-		#self.current_level = self.client.get_compatibility('my_subject')
-		'''
-		Create Serializer
+		Create Serializer and producers
 		'''
 		
 		self.Attitude_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
@@ -413,36 +405,11 @@ class RComponent:
 
 
 		'''
-		To send messages synchronously
-		'''
-
-		'''		
-		Attitude_producer = SimpleProducer(kafka)
-		Location_producer = SimpleProducer(kafka)
-		FuelUsage_producer = SimpleProducer(kafka)
-		SensorReadingScalar_producer = SimpleProducer(kafka)
-		Status_producer = SimpleProducer(kafka)
-		'''
-
-		#Status_keyed_producer = KeyedProducer(kafka, partitioner=Murmur2Partitioner)
-		'''
 		Kafka topic
 		'''
 		partition = 6
 		#key = "rawfie.rob.xl-1"
-		'''
-		Attitude_topic = "UGV_Attitude"
-		Location_topic = "UGV_Location"
-		FuelUsage_topic = "UGV_FuelUsage"
-		SensorReadingScalar_topic = "UGV_SensorReadingScalar"
-		Status_topic = "UGV_Status"
-		
-		Attitude_producer.send_messages(Attitude_topic, encoded_Attitude)
-		Location_producer.send_messages(Location_topic, encoded_Location)
-		FuelUsage_producer.send_messages(FuelUsage_topic, encoded_FuelUsage)
-		SensorReadingScalar_producer.send_messages(SensorReadingScalar_topic, encoded_SensorReadingScalar)
-		#Status_producer.send_messages(Status_topic, encoded_Status)
-		'''
+
 		#KEYED TESTS
 		Attitude_keyed_topic = "Attitude"
 		Location_keyed_topic = "Location"
@@ -452,48 +419,16 @@ class RComponent:
 		
 		# Asynchronous by default
 		Attitude_future = self.Attitude_keyed_producer.send(Attitude_keyed_topic, partition=6, value=encoded_Attitude)
-		# Block for 'synchronous' sends
-		'''
-		try:
-			Attitude_record_metadata = Attitude_future.get()
-		except KafkaError:
-			# Decide what to do if produce request failed...
-			log.exception()
-			pass
-		'''	
+
 		# Asynchronous by default
 		Location_future = self.Location_keyed_producer.send(Location_keyed_topic, partition=6, value=encoded_Location)
-		'''
-		# Block for 'synchronous' sends
-		try:
-			Location_record_metadata = Location_future.get()
-		except KafkaError:
-			# Decide what to do if produce request failed...
-			log.exception()
-			pass
-		'''	
+
 		# Asynchronous by default
 		FuelUsage_future = self.FuelUsage_keyed_producer.send(FuelUsage_keyed_topic, partition=6, value=encoded_FuelUsage)
-		'''
-		# Block for 'synchronous' sends
-		try:
-			FuelUsage_record_metadata = FuelUsage_future.get()
-		except KafkaError:
-			# Decide what to do if produce request failed...
-			log.exception()
-			pass
-		'''	
+
 		# Asynchronous by default
 		SensorReadingScalar_future = self.SensorReadingScalar_keyed_producer.send(SensorReadingScalar_keyed_topic, partition=6, value=encoded_SensorReadingScalar)
-		'''
-		# Block for 'synchronous' sends
-		try:
-			SensorReadingScalar_record_metadata = SensorReadingScalar_future.get()
-		except KafkaError:
-			# Decide what to do if produce request failed...
-			log.exception()
-			pass
-		'''
+
 		return
 		
 	
