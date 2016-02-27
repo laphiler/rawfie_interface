@@ -386,8 +386,10 @@ class RComponent:
 		Attitude_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "Navigation", "time": now.secs}, "phi": self.roll, "theta": self.pitch, "psi": self.yaw}
 		#Location_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "Navigation", "time": now.secs},"latitude": self.latitude, 
 		#						"longitude": self.longitude, "height": self.altitude, "n": self.location_x, "e": self.location_y, "d": 0 }
-		Location_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "Navigation", "time": now.secs},"latitude": 0.718845850137, 
-								"longitude":-0.151905701075, "height": self.altitude, "n": self.location_x, "e": self.location_y, "d": 0 }
+		#Location_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "Navigation", "time": now.secs},"latitude": 0.718845850137, 
+		#						"longitude":-0.151905701075, "height": self.altitude, "n": self.location_x, "e": self.location_y, "d": 0 }
+		Location_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "Navigation", "time": now.secs},'latitude' : 0.718852663 , 
+								'longitude' : -0.151914668, "height": self.altitude, "n": self.location_x, "e": self.location_y, "d": 0 }
 		FuelUsage_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "value": int(self.battery_value)}
 		SensorReadingScalar_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "PTU", "time": now.secs}, "value": self.temperature , "unit": "KELVIN"}
 		
