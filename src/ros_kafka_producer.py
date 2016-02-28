@@ -56,7 +56,7 @@ import avro.schema
 import io, random
 from avro.io import DatumWriter
 
-DEFAULT_FREQ = 0.5
+DEFAULT_FREQ = 2.0
 MAX_FREQ = 500.0
 
 	
