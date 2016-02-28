@@ -374,7 +374,7 @@ class RKConsumer:
 			
 			#set goal
 			goal.target_pose.pose.position.x = goal_x
-			goal.target_pose.pose.position.y = goal_y
+			goal.target_pose.pose.position.y = -1 * goal_y
 			goal.target_pose.pose.orientation.w = 1
 			print goal.target_pose.pose
 			goal.target_pose.header.frame_id = 'odom'
