@@ -35,7 +35,7 @@ current_level = client.get_compatibility('my_subject')
 # encode a record to put onto kafka
 serializer = MessageSerializer(client)
 #record = {"sourceSystem": r"test2", r"sourceModule": "test1", "time": 2543534346L}
-record = {"header":{"sourceSystem": r"test2", r"sourceModule": "test1", "time": 2543534346L}, "location":{"latitude": 0, "longitude": 0, "height": 0, 
+record = {"header":{"sourceSystem": r"test2", r"sourceModule": "test1", "time": 2543534346L}, "location":{"latitude":  0.718852663, "longitude": -0.151914668, "height": 0, 
 						"n": 0.0, "e": 0.0, "d": 0, "depth": 0, "altitude": 0}, "speed": 1.0, "timeout": 5.0}
 
 # use the schema id directly
