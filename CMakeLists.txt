@@ -25,9 +25,9 @@ catkin_python_setup()
 # find_package(Boost REQUIRED COMPONENTS system)
 
 ## Generate services in the 'srv' folder
-add_service_files(DIRECTORY srv
-   FILES
-    goto_test.srv
+add_service_files(
+	DIRECTORY srv
+	FILES CommandSrv.srv
 )
 
 ## Generate added messages and services with any dependencies listed here
