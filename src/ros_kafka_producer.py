@@ -411,7 +411,7 @@ class RComponent:
 		SensorReadingScalar_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "PTU", "time": now.secs}, "value": self.temperature , "unit": "KELVIN"}
 		LaserScan_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "Navigation", "time": now.secs},'angle_min' : self.angle_min , 
 								'angle_max' : self.angle_max, "angle_increment": self.angle_increment, "time_increment": self.time_increment, "scan_time": self.scan_time,
-								 "range_min": self.range_min, "range_max": self.range_max, "ranges": self.ranges, "intensities": [1,2,3] }		
+								 "range_min": self.range_min, "range_max": self.range_max, "ranges": self.ranges, "intensities": self.intensities}		
 		
 		#Status_enum = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "status": "OK"}
 
