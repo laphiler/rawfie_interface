@@ -115,8 +115,8 @@ class RKConsumer:
 		Initialize the client
 		'''
 		
-		#self.client = CachedSchemaRegistryClient(url='http://localhost:8081')
-		self.client = CachedSchemaRegistryClient(url='http://eagle5.di.uoa.gr:8081')
+		self.client = CachedSchemaRegistryClient(url='http://localhost:8081')
+		#self.client = CachedSchemaRegistryClient(url='http://eagle5.di.uoa.gr:8081')
 
 
 		'''
@@ -153,7 +153,7 @@ class RKConsumer:
                 
 		
 		self.goal_consumer = KafkaConsumer('Goto',
-						bootstrap_servers=['eagle5.di.uoa.gr:9092'])  
+						bootstrap_servers=['localhost:9092'])  
 								 
 								 
 		
