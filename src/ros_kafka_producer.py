@@ -42,7 +42,7 @@ import rospkg
 # Messages
 from std_msgs.msg import Float32
 from nav_msgs.msg import Odometry
-from sensor_msgs.msg import NavSatFix
+from sensor_msgs.msg import NavSatFix,LaserScan
 from rescuer_ardu_ptu.msg import ardu_ptu
 
 from geometry_msgs.msg import Point, Quaternion
@@ -108,14 +108,25 @@ class RComponent:
 		self.altitude = 0.0
 		self.temperature = 0.0
 		
+		self.angle_min = 0.0		
+		self.angle_max = 0.0
+		self.angle_increment = 0.0
+		self.time_increment = 0.0
+		self.scan_time = 0.0
+		self.range_min = 0.0
+		self.range_max = 0.0
+		self.ranges = []
+		self.intensities = []
+		
 		self.rp = rospkg.RosPack()
 		self.Attitude_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'Attitude.avsc')
 		self.Location_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'Location.avsc')
 		self.FuelUsage_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'FuelUsage.avsc')
 		self.SensorReadingScalar_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'SensorReadingScalar.avsc')
+		self.LaserScan_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas/uxv', 'LaserScan.avsc')
 		
-		#kafka = KafkaClient('localhost:9092')
-		kafka = KafkaClient('eagle5.di.uoa.gr:9092')
+		kafka = KafkaClient('localhost:9092')
+		#kafka = KafkaClient('eagle5.di.uoa.gr:9092')
 		
 		
 		#self.Status_path_file = os.path.join(self.rp.get_path('rawfie_interface'), 'Avro_Schemas', 'UxVHealthStatus.avsc')
@@ -134,6 +145,7 @@ class RComponent:
 		self.Location_avro_schema = Util.parse_schema_from_string(open(self.Location_path_file).read())
 		self.FuelUsage_avro_schema = Util.parse_schema_from_string(open(self.FuelUsage_path_file).read())
 		self.SensorReadingScalar_avro_schema = Util.parse_schema_from_string(open(self.SensorReadingScalar_path_file).read())
+		self.LaserScan_avro_schema = Util.parse_schema_from_string(open(self.LaserScan_path_file).read())
 		
 		
 		#self.Status_avro_schema = Util.parse_schema_from_string(open(self.Status_path_file).read())
@@ -142,8 +154,8 @@ class RComponent:
 		Initialize the client
 		'''
 		
-		#self.client = CachedSchemaRegistryClient(url='http://localhost:8081')
-		self.client = CachedSchemaRegistryClient(url='http://eagle5.di.uoa.gr:8081')
+		self.client = CachedSchemaRegistryClient(url='http://localhost:8081')
+		#self.client = CachedSchemaRegistryClient(url='http://eagle5.di.uoa.gr:8081')
 		'''
 			# Schema operations
 		'''
@@ -155,6 +167,7 @@ class RComponent:
 		self.Location_schema_id = self.client.register('UGV_Location', self.Location_avro_schema)
 		self.FuelUsage_schema_id = self.client.register('UGV_FuelUsage', self.FuelUsage_avro_schema)
 		self.SensorReadingScalar_schema_id = self.client.register('UGV_SensorReadingScalar', self.SensorReadingScalar_avro_schema)
+		self.LaserScan_schema_id = self.client.register('UGV_LaserScan', self.LaserScan_avro_schema)
 		
 		
 		#self.Status_schema_id = self.client.register('UGV_Status', self.Status_avro_schema)
@@ -166,6 +179,7 @@ class RComponent:
 		self.Location_schema_version = self.client.get_version('UGV_Location', self.Location_avro_schema)
 		self.FuelUsage_schema_version = self.client.get_version('UGV_FuelUsage', self.FuelUsage_avro_schema)
 		self.SensorReadingScalar_schema_version = self.client.get_version('UGV_SensorReadingScalar', self.SensorReadingScalar_avro_schema)
+		self.LaserScan_schema_version = self.client.get_version('UGV_LaserScan', self.LaserScan_avro_schema)
 		
 		
 		#self.Status_schema_version = self.client.get_version('UGV_Status', self.Status_avro_schema)
@@ -173,11 +187,13 @@ class RComponent:
 		'''
 		Create Serializer and producers
 		'''
+		#bootstrap_servers=['eagle5.di.uoa.gr:9092']
 		
-		self.Attitude_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
-		self.Location_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
-		self.FuelUsage_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
-		self.SensorReadingScalar_keyed_producer = KafkaProducer(bootstrap_servers=['eagle5.di.uoa.gr:9092'],api_version = '0.8.2')
+		self.Attitude_keyed_producer = KafkaProducer(bootstrap_servers=['localhost:9092'],api_version = '0.8.2')
+		self.Location_keyed_producer = KafkaProducer(bootstrap_servers=['localhost:9092'],api_version = '0.8.2')
+		self.FuelUsage_keyed_producer = KafkaProducer(bootstrap_servers=['localhost:9092'],api_version = '0.8.2')
+		self.SensorReadingScalar_keyed_producer = KafkaProducer(bootstrap_servers=['localhost:9092'],api_version = '0.8.2')
+		self.LaserScan_keyed_producer = KafkaProducer(bootstrap_servers=['localhost:9092'],api_version = '0.8.2')
 		
 		
 		self.serializer = MessageSerializer(self.client)
@@ -198,11 +214,12 @@ class RComponent:
 		self._state_publisher = rospy.Publisher('~state', State, queue_size=10)
 		# Subscribers
 		# topic_name, msg type, callback, queue_size
-		#self.odom_sub = rospy.Subscriber('/summit_xl/odom', Odometry, self.OdomCb, queue_size = 10)
-		self.odom_sub = rospy.Subscriber('/odom', Odometry, self.OdomCb, queue_size = 10)
+		self.odom_sub = rospy.Subscriber('/summit_xl/odom', Odometry, self.OdomCb, queue_size = 10)
+		#self.odom_sub = rospy.Subscriber('/odom', Odometry, self.OdomCb, queue_size = 10)
 		self.gps_sub = rospy.Subscriber('/mavros/gps/fix', NavSatFix, self.GpsCb, queue_size = 10)
 		self.ptu_sub = rospy.Subscriber('/ardu_ptu/data', ardu_ptu, self.PtuCb, queue_size = 10)
 		self.battery_sub = rospy.Subscriber('/summit_xl_controller/battery', Float32, self.BatteryCb, queue_size = 10)
+		self.laser_scan_sub = rospy.Subscriber('/hokuyo_front/scan', LaserScan, self.LaserScanCb, queue_size = 10)
 		# Service Servers
 		# self.service_server = rospy.Service('~service', Empty, self.serviceCb)
 		# Service Clients
@@ -371,11 +388,11 @@ class RComponent:
 		now = rospy.get_rostime()
 		#rospy.loginfo("Current time %i %i", now.secs, now.nsecs)
 		
-		''' Battery fake value for simulation
+		# Battery fake value for simulation
 		if (now.secs // 60) > self.minutes:
 			self.minutes = self.minutes + 1
 			self.battery_voltage = 53.0 - self.minutes * 0.1
-		'''	
+			
 		if 47.0 <= self.battery_voltage <= 53.0:
 			self.battery_value = 15.0 * self.battery_voltage - 695.0
 		if 43.0 <= self.battery_voltage <= 47.0:
@@ -392,7 +409,9 @@ class RComponent:
 								'longitude' : -0.151914668, "height": self.altitude, "n": self.location_x, "e": self.location_y, "d": 0 }
 		FuelUsage_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "value": int(self.battery_value)}
 		SensorReadingScalar_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "PTU", "time": now.secs}, "value": self.temperature , "unit": "KELVIN"}
-		
+		LaserScan_record = {"header":{"sourceSystem": r"rawfie.rob.xl-1", r"sourceModule": "Navigation", "time": now.secs},'angle_min' : self.angle_min , 
+								'angle_max' : self.angle_max, "angle_increment": self.angle_increment, "time_increment": self.time_increment, "scan_time": self.scan_time,
+								 "range_min": self.range_min, "range_max": self.range_max, "ranges": self.ranges, "intensities": [1,2,3] }		
 		
 		#Status_enum = {"header":{"sourceSystem": r"Testbed1", r"sourceModule": "UGV Summit_XL_1", "time": now.secs}, "status": "OK"}
 
@@ -403,6 +422,7 @@ class RComponent:
 		encoded_Location = self.serializer.encode_record_with_schema_id(self.Location_schema_id, Location_record)
 		encoded_FuelUsage = self.serializer.encode_record_with_schema_id(self.FuelUsage_schema_id, FuelUsage_record)
 		encoded_SensorReadingScalar = self.serializer.encode_record_with_schema_id(self.SensorReadingScalar_schema_id, SensorReadingScalar_record)
+		encoded_LaserScan = self.serializer.encode_record_with_schema_id(self.LaserScan_schema_id, LaserScan_record)
 		#encoded_Status = self.serializer.encode_record_with_schema_id(self.Status_schema_id, Status_enum)
 
 
@@ -417,6 +437,7 @@ class RComponent:
 		Location_keyed_topic = "Location"
 		FuelUsage_keyed_topic = "FuelUsage"
 		SensorReadingScalar_keyed_topic = "SensorReadingScalar"
+		LaserScan_keyed_topic = "LaserScan"
 		#Status_keyed_topic = "Status2"
 		
 		# Asynchronous by default
@@ -430,6 +451,9 @@ class RComponent:
 
 		# Asynchronous by default
 		SensorReadingScalar_future = self.SensorReadingScalar_keyed_producer.send(SensorReadingScalar_keyed_topic, partition=6, value=encoded_SensorReadingScalar)
+		
+		# Asynchronous by default
+		LaserScan_future = self.LaserScan_keyed_producer.send(LaserScan_keyed_topic, partition=6, value=encoded_LaserScan)
 
 		return
 		
@@ -569,6 +593,19 @@ class RComponent:
 	def BatteryCb(self,msg):
 		
 		self.battery_voltage = msg.data 
+		
+	def LaserScanCb(self,msg):
+		
+		self.angle_min = msg.angle_min		
+		self.angle_max = msg.angle_max
+		self.angle_increment = msg.angle_increment
+		self.time_increment = msg.time_increment
+		self.scan_time = msg.scan_time
+		self.range_min = msg.range_min
+		self.range_max = msg.range_max
+		self.ranges = list(msg.ranges)
+		self.intensities = list(msg.intensities)
+		#print self.time_increment
 	
 				
 	"""
